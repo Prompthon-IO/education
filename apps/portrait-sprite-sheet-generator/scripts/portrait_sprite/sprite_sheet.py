@@ -16,6 +16,8 @@ EMOTIONS = [
     ("playful", ("wink tongue", "mischievous tongue")),
     ("sleepy", ("closed eyes", "yawn Z")),
 ]
+FRAME_COLUMNS = 3
+FRAME_ROWS = 4
 
 
 @dataclass(frozen=True)
@@ -70,12 +72,13 @@ def save_face_outputs(
 
 
 def assemble_sheet(frames: list[Image.Image], frame_size: int) -> Image.Image:
-    if len(frames) != 12:
-        raise ValueError(f"Expected 12 frames, got {len(frames)}")
-    sheet = Image.new("RGBA", (2 * frame_size, 6 * frame_size), (255, 255, 255, 0))
+    expected_frames = sum(len(variations) for _emotion, variations in EMOTIONS)
+    if len(frames) != expected_frames:
+        raise ValueError(f"Expected {expected_frames} frames, got {len(frames)}")
+    sheet = Image.new("RGBA", (FRAME_COLUMNS * frame_size, FRAME_ROWS * frame_size), (255, 255, 255, 0))
     for index, frame in enumerate(frames):
-        row = index // 2
-        column = index % 2
+        row = index // FRAME_COLUMNS
+        column = index % FRAME_COLUMNS
         sheet.alpha_composite(frame, (column * frame_size, row * frame_size))
     return sheet
 
@@ -150,15 +153,6 @@ def _draw_expression(image: Image.Image, emotion: str, variation: str, frame_siz
         if variation_index == 2:
             _star(draw, cx + 125, eye_y - 65, 20, (255, 176, 0, 230))
             _star(draw, cx - 128, eye_y - 48, 16, (255, 176, 0, 230))
-    elif emotion == "playful":
-        if variation_index == 1:
-            draw.arc((left_eye - 34, eye_y - 20, left_eye + 34, eye_y + 24), 15, 165, fill=ink, width=stroke)
-            eye(right_eye, eye_y)
-        else:
-            eye(left_eye, eye_y)
-            eye(right_eye, eye_y)
-        draw.arc((cx - 62, mouth_y - 18, cx + 62, mouth_y + 48), 10, 170, fill=ink, width=stroke)
-        draw.ellipse((cx - 18, mouth_y + 22, cx + 28, mouth_y + 76), fill=(255, 115, 145, 235), outline=ink, width=max(2, stroke // 2))
     elif emotion == "sleepy":
         draw.arc((left_eye - 35, eye_y - 12, left_eye + 35, eye_y + 20), 10, 170, fill=ink, width=stroke)
         draw.arc((right_eye - 35, eye_y - 12, right_eye + 35, eye_y + 20), 10, 170, fill=ink, width=stroke)
@@ -169,6 +163,15 @@ def _draw_expression(image: Image.Image, emotion: str, variation: str, frame_siz
             font = _font(frame_size // 9)
             draw.text((cx + 82, eye_y - 105), "Z", fill=ink, font=font)
             draw.text((cx + 124, eye_y - 150), "z", fill=ink, font=_font(frame_size // 12))
+    elif emotion == "playful":
+        if variation_index == 1:
+            draw.arc((left_eye - 34, eye_y - 20, left_eye + 34, eye_y + 24), 15, 165, fill=ink, width=stroke)
+            eye(right_eye, eye_y)
+        else:
+            eye(left_eye, eye_y)
+            eye(right_eye, eye_y)
+        draw.arc((cx - 62, mouth_y - 18, cx + 62, mouth_y + 48), 10, 170, fill=ink, width=stroke)
+        draw.ellipse((cx - 18, mouth_y + 22, cx + 28, mouth_y + 76), fill=(255, 115, 145, 235), outline=ink, width=max(2, stroke // 2))
 
 
 def _star(draw: ImageDraw.ImageDraw, x: int, y: int, radius: int, fill: tuple[int, int, int, int]) -> None:

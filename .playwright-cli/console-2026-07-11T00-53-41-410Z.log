@@ -1,0 +1,222 @@
+[     950ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[ 1324598ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:3001/@vite/client:963
+[ 1324611ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1325013ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1329782ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1331720ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1332331ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1332365ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1332368ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1332539ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1333361ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1333542ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1333672ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1334558ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1334851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1335183ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1335567ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1336354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1336577ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1336673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1337595ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1337870ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1338178ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1338621ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1339351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1339663ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1339672ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1340747ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1340850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1341173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1341896ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1342350ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1342673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1343213ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1343850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1344173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1344424ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1345351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1345674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1346470ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1346859ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1347174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1348353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1348674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1349097ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1349852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1350175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1351353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1351673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1352357ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1352850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1353173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1354350ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1354673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1355850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1356174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1356738ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1357350ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1357672ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1358854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1359104ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1359173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1360351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1360676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1361852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1362174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1363352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1363676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1363876ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1364852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1365175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1366353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1366676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1367850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1368001ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1368173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1369350ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1369673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1370054ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1370850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1371173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1372351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1372678ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1373226ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1373852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1374178ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1375352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1375676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1376851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1377175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1378218ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1378352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1378674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1379851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1380174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1381351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1381673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1382852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1383178ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1383547ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1384351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1384674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1385851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1386173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1386527ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1387351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1387676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1388853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1389175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1390353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1390674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1391702ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1391852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1392175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1393372ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1393680ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1394853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1395182ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1396351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1396491ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1396673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1397852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1398173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1399351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1399674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1400851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1401173ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1401908ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1402353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1402676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1403853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1404175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1404769ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1405352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1405675ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1406853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1407175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1407365ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1408354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1408674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1409852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1410174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1411352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1411673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1412402ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1412851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1413174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1414352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1414674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1415853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1416175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1416593ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1417353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1417675ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1418854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1419175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1420354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1420675ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1421854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1422089ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1422176ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1423351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1423675ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1424851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1425174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1426352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1426674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1427046ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1427851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1428174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1429361ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1429676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1430853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1431176ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1431464ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1432354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1432677ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1433854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1434175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1435353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1435678ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1436854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1436856ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1437174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1438351ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1438675ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1439198ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1439852ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1440175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1441352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1441674ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1442558ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1442853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1443176ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1444354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1444676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1445854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1446176ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1446681ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1447353ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1447676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1448853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1449175ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1450354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1450676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1451854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1452176ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1452277ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1453354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1453677ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1454853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1455178ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1456178ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:3001/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/@vite/client:1034
+[ 1456357ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1456675ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1457853ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1458174ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1459352ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1459677ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1460854ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1461176ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:3001/generated-avatar/current-sprite-sheet-preview.png:0
+[ 1464570ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102

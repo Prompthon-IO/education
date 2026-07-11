@@ -1,0 +1,33 @@
+[ 8095547ms] ReferenceError: getMemoryTensionLevel is not defined
+    at MemoryMatchGame (http://127.0.0.1:3001/src/arcade-ui.tsx?t=1783713404548:1104:24)
+    at Object.react_stack_bottom_frame (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:18509:20)
+    at renderWithHooks (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:5654:24)
+    at updateFunctionComponent (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:7475:21)
+    at beginWork (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:8525:20)
+    at runWithFiberInDEV (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:997:72)
+    at performUnitOfWork (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:12561:98)
+    at workLoopSync (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:12424:43)
+    at renderRootSync (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:12408:13)
+    at performWorkOnRoot (http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:11827:37)
+[ 8095554ms] [WARNING] %s
+
+%s
+ An error occurred in the <MemoryMatchGame> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:6965
+[ 8641490ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[ 8756053ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[10520176ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[10601210ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[11065149ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[14449247ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[17560211ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[17776446ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[17814801ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:3001/src/arcade-ui.tsx?t=1783723126193:0
+[17814844ms] [ERROR] [vite] Failed to reload /src/arcade-ui.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:3001/@vite/client:881
+[17982810ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:3001/src/arcade-ui.tsx?t=1783723294520:0
+[17982810ms] [ERROR] [vite] Failed to reload /src/arcade-ui.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:3001/@vite/client:881
+[18041483ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:3001/src/arcade-ui.tsx?t=1783723353204:0
+[18041500ms] [ERROR] [vite] Failed to reload /src/arcade-ui.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:3001/@vite/client:881
+[18138440ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[18252593ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102
+[19067535ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3001/node_modules/.vite/deps/react-dom_client.js?v=5f863b4b:20102

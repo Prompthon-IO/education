@@ -1,0 +1,41 @@
+- main [ref=e309]:
+  - main [ref=e310]:
+    - generic [ref=e312]:
+      - button "Toggle application navigation" [ref=e313] [cursor=pointer]:
+        - generic [ref=e314]: Toggle Sidebar
+      - generic [ref=e318]:
+        - heading "Memory Match" [level=1] [ref=e319]
+        - paragraph [ref=e320]: Find pairs of the player avatar expressions.
+    - generic [ref=e322]:
+      - generic [ref=e323]:
+        - generic [ref=e324]:
+          - generic [ref=e325]: Time 2:00
+          - generic [ref=e329]: "0"
+        - generic [ref=e336]:
+          - generic [ref=e337]:
+            - button "Flip surprised" [disabled] [ref=e338]
+            - button "Flip excited" [disabled] [ref=e344]
+            - button "Flip dizzy" [disabled] [ref=e350]
+            - button "Flip sleepy" [disabled] [ref=e356]
+            - button "Flip sad" [disabled] [ref=e362]
+            - button "Flip surprised" [disabled] [ref=e368]
+            - button "Flip excited" [disabled] [ref=e374]
+            - button "Flip sleepy" [disabled] [ref=e380]
+            - button "Flip playful" [disabled] [ref=e386]
+            - button "Flip playful" [disabled] [ref=e392]
+            - button "Flip dizzy" [disabled] [ref=e398]
+            - button "Flip angry" [disabled] [ref=e404]
+            - button "Flip happy" [disabled] [ref=e410]
+            - button "Flip sad" [disabled] [ref=e416]
+            - button "Flip happy" [disabled] [ref=e422]
+            - button "Flip angry" [disabled] [ref=e428]
+          - button "Play" [ref=e435] [cursor=pointer]
+      - generic [ref=e436]:
+        - generic [ref=e437]: Prize leaderboard
+        - generic [ref=e446]:
+          - generic [ref=e447]:
+            - generic [ref=e448]: Daily
+            - generic [ref=e449]: No scores yet
+          - generic [ref=e450]:
+            - generic [ref=e451]: All time
+            - generic [ref=e452]: No scores yet

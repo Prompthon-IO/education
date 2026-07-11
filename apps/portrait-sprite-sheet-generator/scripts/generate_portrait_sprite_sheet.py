@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--generated-sheet",
         type=Path,
-        help="ImageGen-produced 6x2 review sheet to normalize into production frames.",
+        help="ImageGen-produced 3x4 review sheet to normalize into production frames.",
     )
     parser.add_argument("--output-dir", required=True, type=Path, help="Directory for generated face folders.")
     parser.add_argument("--frame-size", default=512, type=int, help="Square frame size in pixels.")

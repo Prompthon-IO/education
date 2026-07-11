@@ -27,16 +27,34 @@
         "height": 44
       },
       "discord_qr": {
-        "x": 322,
+        "x": 340,
         "y": 52,
         "width": 220,
-        "height": 220
+        "height": 220,
+        "frame_bounds": {
+          "x": 324,
+          "y": 36,
+          "width": 252,
+          "height": 252,
+          "corner_radius": 26,
+          "padding": 16
+        }
       },
       "source_portrait": {
         "x": 58,
         "y": 52,
         "width": 220,
-        "height": 220
+        "height": 220,
+        "corner_radius": 27,
+        "frame_bounds": {
+          "x": 42,
+          "y": 36,
+          "width": 252,
+          "height": 252,
+          "corner_radius": 26,
+          "padding": 16
+        },
+        "placeholder": true
       }
     }
   },

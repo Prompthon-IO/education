@@ -6,23 +6,11 @@ from pathlib import Path
 from PIL import Image
 
 from .image_utils import circular_mask
-from .sprite_sheet import assemble_sheet, _draw_preview_labels
+from .sprite_sheet import EMOTIONS, FRAME_COLUMNS, FRAME_ROWS, assemble_sheet, _draw_preview_labels
 
 
-FRAME_IDS = [
-    "happy_01",
-    "happy_02",
-    "excited_01",
-    "excited_02",
-    "sad_01",
-    "sad_02",
-    "dizzy_01",
-    "dizzy_02",
-    "playful_01",
-    "playful_02",
-    "sleepy_01",
-    "sleepy_02",
-]
+FRAME_IDS = [f"{emotion}_{variation_index:02d}" for emotion, variations in EMOTIONS for variation_index in range(1, len(variations) + 1)]
+EXPECTED_FRAME_COUNT = len(FRAME_IDS)
 
 
 def save_generated_sheet_outputs(
@@ -57,12 +45,12 @@ def save_generated_sheet_outputs(
 
 def extract_frames_from_generated_sheet(image: Image.Image, frame_size: int) -> list[Image.Image]:
     components = _find_badge_background_components(image)
-    if len(components) == 12:
+    if len(components) == EXPECTED_FRAME_COUNT:
         components = _sort_components_as_grid(components)
     else:
         components = _find_avatar_components(image)
-    if len(components) >= 12:
-        components = _sort_components_as_grid(components[:12])
+    if len(components) >= EXPECTED_FRAME_COUNT:
+        components = _sort_components_as_grid(components[:EXPECTED_FRAME_COUNT])
     else:
         components = _infer_regular_grid_components(components, image.size)
     return [_normalize_component(image, bbox, frame_size) for bbox in components]
@@ -150,7 +138,7 @@ def _looks_like_avatar_component(width: int, height: int, area: int, image_width
 
 def _sort_components_as_grid(components: list[tuple[int, int, int, int, int]]) -> list[tuple[int, int, int, int, int]]:
     sorted_by_y = sorted(components, key=lambda item: item[1] + item[3] / 2)
-    rows = [sorted_by_y[index : index + 2] for index in range(0, 12, 2)]
+    rows = [sorted_by_y[index : index + FRAME_COLUMNS] for index in range(0, EXPECTED_FRAME_COUNT, FRAME_COLUMNS)]
     return [item for row in rows for item in sorted(row, key=lambda value: value[0] + value[2] / 2)]
 
 
@@ -159,14 +147,17 @@ def _infer_regular_grid_components(
     image_size: tuple[int, int],
 ) -> list[tuple[int, int, int, int, int]]:
     if len(components) < 4:
-        raise ValueError(f"Expected enough avatar components to infer a 6x2 grid, found {len(components)}")
+        raise ValueError(f"Expected enough avatar components to infer a {FRAME_ROWS}x{FRAME_COLUMNS} grid, found {len(components)}")
 
     image_width, image_height = image_size
     centers = [(x + width / 2, y + height / 2, width, height) for x, y, width, height, _area in components]
     centers_by_x = sorted(centers, key=lambda item: item[0])
-    midpoint = len(centers_by_x) // 2
-    left_column_x = sum(item[0] for item in centers_by_x[:midpoint]) / max(1, midpoint)
-    right_column_x = sum(item[0] for item in centers_by_x[midpoint:]) / max(1, len(centers_by_x) - midpoint)
+    column_xs = []
+    for column in range(FRAME_COLUMNS):
+        start = round(column * len(centers_by_x) / FRAME_COLUMNS)
+        end = round((column + 1) * len(centers_by_x) / FRAME_COLUMNS)
+        group = centers_by_x[start:end] or centers_by_x
+        column_xs.append(sum(item[0] for item in group) / len(group))
 
     y_centers = sorted({round(item[1]) for item in centers})
     top_y = min(y_centers)
@@ -174,16 +165,16 @@ def _infer_regular_grid_components(
     if diffs:
         row_gap = sorted(diffs)[len(diffs) // 2]
     else:
-        row_gap = (image_height - top_y * 2) / 5
+        row_gap = (image_height - top_y * 2) / max(1, FRAME_ROWS - 1)
 
     near_square_widths = [width for _cx, _cy, width, height in centers if 0.65 <= width / max(1, height) <= 1.35]
     base_side = sorted(near_square_widths or [item[2] for item in centers])[len(near_square_widths or centers) // 2]
     side = max(64, round(min(base_side * 1.06, row_gap * 0.96)))
 
     inferred: list[tuple[int, int, int, int, int]] = []
-    for row in range(6):
+    for row in range(FRAME_ROWS):
         center_y = top_y + row * row_gap
-        for center_x in (left_column_x, right_column_x):
+        for center_x in column_xs:
             left = max(0, round(center_x - side / 2))
             top = max(0, round(center_y - side / 2))
             if left + side > image_width:
@@ -196,19 +187,16 @@ def _infer_regular_grid_components(
 
 def _normalize_component(image: Image.Image, bbox: tuple[int, int, int, int, int], frame_size: int) -> Image.Image:
     x, y, width, height, _area = bbox
-    side = max(width, height)
-    pad = round(side * 0.08)
-    center_x = x + width / 2
-    center_y = y + height / 2
-    left = max(0, round(center_x - side / 2 - pad))
-    top = max(0, round(center_y - side / 2 - pad))
-    right = min(image.width, round(center_x + side / 2 + pad))
-    bottom = min(image.height, round(center_y + side / 2 + pad))
+    pad_x = max(2, round(width * 0.015))
+    pad_y = max(2, round(height * 0.015))
+    left = max(0, x - pad_x)
+    top = max(0, y - pad_y)
+    right = min(image.width, x + width + pad_x)
+    bottom = min(image.height, y + height + pad_y)
     crop = image.crop((left, top, right, bottom)).convert("RGBA")
 
-    content_size = round(frame_size * 0.9)
-    crop.thumbnail((content_size, content_size), Image.Resampling.LANCZOS)
-    frame = Image.new("RGBA", (frame_size, frame_size), (255, 255, 255, 0))
-    frame.alpha_composite(crop, ((frame_size - crop.width) // 2, (frame_size - crop.height) // 2))
-    frame.putalpha(circular_mask(frame_size, max(18, round(frame_size * 0.055))))
+    # Image generators often make nominal circles slightly oval. The manifest
+    # defines square slots, so normalize both axes to the exact frame geometry.
+    frame = crop.resize((frame_size, frame_size), Image.Resampling.LANCZOS)
+    frame.putalpha(circular_mask(frame_size, 0))
     return frame

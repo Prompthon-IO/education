@@ -1,4 +1,9 @@
 import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Check,
   ChevronDown,
   CircleDot,
   Camera,
@@ -20,7 +25,6 @@ import {
   SkipForward,
   Settings,
   Sparkles,
-  Target,
   Trash2,
   Trophy,
   Upload,
@@ -77,8 +81,27 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import {
+  ArcadeGame,
+  ARCADE_GAME_CONFIGS,
+  AvatarSprite,
+  GameStartOverlay,
+  buildWordSnakeEntry,
+  isArcadeGameId,
+  useArcadeAvatarManifest,
+  type ArcadeAvatarAsset,
+  type ArcadeGameId
+} from "./arcade-ui";
+import { createLeaderboardStore, type AvatarExpression, type AvatarManifest, type LeaderboardEntry } from "./arcade";
+import {
+  GESTURE_CONSENSUS_THRESHOLD,
+  GESTURE_SAMPLE_INTERVAL_MS,
+  GESTURE_SAMPLE_WINDOW_SIZE,
+  resolveGestureConsensus,
+  type HandGesture
+} from "./gesture";
 import prompthonLogo from "./assets/prompthon-community-light.png";
-import prompthonSquareLogo from "./assets/prompthon-square-light.png";
+import prompthonSquareDarkLogo from "./assets/prompthon-square-dark.png";
 import collisionLabConfigJson from "./data/applications/collision-lab.json";
 import type { HandLandmarker, NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { type ChangeEvent, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -93,6 +116,9 @@ type SpriteSheetConfig = {
   frameSize?: number;
   frameWidth?: number;
   frameHeight?: number;
+  imageWidth?: number;
+  imageHeight?: number;
+  frames?: Partial<Record<SpriteEmotion, { x: number; y: number; width: number; height: number }>>;
   renderAspectRatio?: number;
   layout?: "vertical-pairs" | "horizontal-emotions";
 };
@@ -148,12 +174,19 @@ type ApplicationConfig = {
   objects: ApplicationConfigObject[];
 };
 
-type ApplicationId = "collision-lab" | "word-snake" | "settings";
+type ApplicationId = "collision-lab" | "word-snake" | ArcadeGameId | "settings";
 
 type NavigationApplication = {
   id: ApplicationId;
   name: string;
 };
+
+type PlayerProfile = {
+  name: string;
+  imagePath: string;
+};
+
+type ResetPlayerStep = 1 | 2 | 3;
 
 type SimObject = {
   id: string;
@@ -252,16 +285,23 @@ const SETTINGS_CONFIG = {
 };
 const APPLICATION_CONFIGS: NavigationApplication[] = [
   { id: APPLICATION_CONFIG.id as ApplicationId, name: APPLICATION_CONFIG.name },
-  { id: WORD_SNAKE_CONFIG.id, name: WORD_SNAKE_CONFIG.name }
+  { id: WORD_SNAKE_CONFIG.id, name: WORD_SNAKE_CONFIG.name },
+  ...ARCADE_GAME_CONFIGS.map((game) => ({ id: game.id as ApplicationId, name: game.name }))
 ];
 const LIVE_SPRITE_SHEET_PATH = "/generated-avatar/current-sprite-sheet.png";
 const LIVE_SPRITE_SHEET_PREVIEW_PATH = "/generated-avatar/current-sprite-sheet-preview.png";
 const SPRITE_TEMPLATE_PATH = "/generated-avatar/sprite-template-4x7.png";
 const SPRITE_TEMPLATE_MANIFEST_PATH = "/generated-avatar/sprite-template-4x7-manifest.json";
+const SPRITE_TEMPLATE_PREVIEW_PATH = `${SPRITE_TEMPLATE_PATH}?v=header-spacing-v3`;
 const FIXED_AVATAR_SHEET_ASPECT_RATIO = "4 / 7";
+const ACTIVE_APPLICATION_STORAGE_KEY = "prompthon-active-application-id";
+const DEFAULT_PLAYER_PROFILE: PlayerProfile = {
+  name: import.meta.env.VITE_ARCADE_DEFAULT_PLAYER_NAME || "Player",
+  imagePath: LIVE_SPRITE_SHEET_PATH
+};
 const SPRITE_TEMPLATE_ASSET: ObjectShapeAsset = {
   dataUrl: SPRITE_TEMPLATE_PATH,
-  previewUrl: SPRITE_TEMPLATE_PATH,
+  previewUrl: SPRITE_TEMPLATE_PREVIEW_PATH,
   name: "FIRA x Prompthon 4x7 avatar template",
   mimeType: "image/png"
 };
@@ -327,6 +367,28 @@ const SPRITE_EMOTION_ROWS: Record<SpriteEmotion, number> = {
 const SPRITE_EMOTION_ORDER: SpriteEmotion[] = ["happy", "excited", "sad", "dizzy", "playful", "sleepy"];
 const AVATAR_TEMPLATE_EMOTIONS = ["happy", "excited", "sad", "dizzy", "playful", "sleepy"] as const;
 const AVATAR_TEMPLATE_STICKERS = AVATAR_TEMPLATE_EMOTIONS.flatMap((emotion) => [`${emotion} 1`, `${emotion} 2`]);
+const AVATAR_TEMPLATE_SLOT_GEOMETRY = [
+  { slot: "r1c1", sticker: "happy_01", x: 70, y: 360, center: "225,515" },
+  { slot: "r1c2", sticker: "happy_02", x: 445, y: 360, center: "600,515" },
+  { slot: "r1c3", sticker: "excited_01", x: 820, y: 360, center: "975,515" },
+  { slot: "r2c1", sticker: "excited_02", x: 70, y: 750, center: "225,905" },
+  { slot: "r2c2", sticker: "sad_01", x: 445, y: 750, center: "600,905" },
+  { slot: "r2c3", sticker: "sad_02", x: 820, y: 750, center: "975,905" },
+  { slot: "r3c1", sticker: "dizzy_01", x: 70, y: 1140, center: "225,1295" },
+  { slot: "r3c2", sticker: "dizzy_02", x: 445, y: 1140, center: "600,1295" },
+  { slot: "r3c3", sticker: "playful_01", x: 820, y: 1140, center: "975,1295" },
+  { slot: "r4c1", sticker: "playful_02", x: 70, y: 1530, center: "225,1685" },
+  { slot: "r4c2", sticker: "sleepy_01", x: 445, y: 1530, center: "600,1685" },
+  { slot: "r4c3", sticker: "sleepy_02", x: 820, y: 1530, center: "975,1685" }
+] as const;
+const AVATAR_TEMPLATE_HEADER_GEOMETRY = [
+  { label: "Source photo crop", bounds: "x=58 y=52 w=220 h=220", note: "rounded face crop, radius 27" },
+  { label: "Source photo frame", bounds: "x=42 y=36 w=252 h=252", note: "white rounded rectangle, radius 26" },
+  { label: "Discord QR crop", bounds: "x=340 y=52 w=220 h=220", note: "same size as source photo, with a wider gap" },
+  { label: "Discord QR frame", bounds: "x=324 y=36 w=252 h=252", note: "same border as source photo" },
+  { label: "FIRA logo", bounds: "x=620 y=58 w=520 h=85", note: "right header top row" },
+  { label: "Prompthon.io logo", bounds: "x=620 y=201 w=520 h=44", note: "right header second row" }
+] as const;
 const SLEEPY_SPEED_THRESHOLD = 0.35;
 const IMMINENT_COLLISION_SECONDS = 1.25;
 const INITIAL_MODE: Mode = "challenge";
@@ -346,14 +408,33 @@ const INITIAL_CHALLENGE_STATE = createChallengeState(INITIAL_CHALLENGE_BOUNDS, I
 const INITIAL_SNAPSHOT = createSnapshot(INITIAL_SIM_OBJECTS, 0);
 
 export function App() {
-  const [activeApplicationId, setActiveApplicationId] = useState<ApplicationId>("collision-lab");
-  const [sharedAvatarAsset] = useState<ObjectShapeAsset | null>(null);
+  const [activeApplicationId, setActiveApplicationId] = useState<ApplicationId>(() => loadActiveApplicationId());
+  const [playerProfile, setPlayerProfile] = useState<PlayerProfile>(DEFAULT_PLAYER_PROFILE);
+  const liveAvatarAsset = useLiveSpriteSheetAsset();
+  const sharedAvatarAsset = liveAvatarAsset ?? INITIAL_OBJECTS[0]?.shapeAsset ?? SPRITE_TEMPLATE_ASSET;
+
+  useEffect(() => {
+    saveActiveApplicationId(activeApplicationId);
+  }, [activeApplicationId]);
 
   if (activeApplicationId === "word-snake") {
     return (
       <WordSnakeApp
         activeApplicationId={activeApplicationId}
         onSelectApplication={setActiveApplicationId}
+        sharedAvatarAsset={sharedAvatarAsset}
+        playerProfile={playerProfile}
+      />
+    );
+  }
+
+  if (isArcadeGameId(activeApplicationId)) {
+    return (
+      <ArcadeGameApp
+        activeApplicationId={activeApplicationId}
+        onSelectApplication={setActiveApplicationId}
+        sharedAvatarAsset={sharedAvatarAsset}
+        playerProfile={playerProfile}
       />
     );
   }
@@ -364,6 +445,8 @@ export function App() {
         activeApplicationId={activeApplicationId}
         onSelectApplication={setActiveApplicationId}
         sharedAvatarAsset={sharedAvatarAsset}
+        playerProfile={playerProfile}
+        onUpdatePlayerProfile={setPlayerProfile}
       />
     );
   }
@@ -374,6 +457,60 @@ export function App() {
       onSelectApplication={setActiveApplicationId}
       sharedAvatarAsset={sharedAvatarAsset}
     />
+  );
+}
+
+function loadActiveApplicationId(): ApplicationId {
+  if (typeof window === "undefined") {
+    return "collision-lab";
+  }
+
+  try {
+    const savedApplicationId = window.localStorage.getItem(ACTIVE_APPLICATION_STORAGE_KEY);
+    return APPLICATION_CONFIGS.some((application) => application.id === savedApplicationId)
+      ? savedApplicationId as ApplicationId
+      : "collision-lab";
+  } catch {
+    return "collision-lab";
+  }
+}
+
+function saveActiveApplicationId(applicationId: ApplicationId) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(ACTIVE_APPLICATION_STORAGE_KEY, applicationId);
+  } catch {
+    // Local storage can be unavailable in private or restricted browser modes.
+  }
+}
+
+function ArcadeGameApp({
+  activeApplicationId,
+  onSelectApplication,
+  sharedAvatarAsset,
+  playerProfile
+}: {
+  activeApplicationId: ArcadeGameId;
+  onSelectApplication: (applicationId: ApplicationId) => void;
+  sharedAvatarAsset: ArcadeAvatarAsset | null;
+  playerProfile: PlayerProfile;
+}) {
+  return (
+    <TooltipProvider>
+      <SidebarProvider className="h-dvh min-h-0 overflow-hidden bg-background text-foreground">
+        <PrimarySidebar
+          applications={APPLICATION_CONFIGS}
+          activeApplicationId={activeApplicationId}
+          onSelectApplication={onSelectApplication}
+        />
+        <SidebarInset className="h-dvh min-h-0 overflow-hidden bg-background">
+          <ArcadeGame gameId={activeApplicationId} avatarAsset={sharedAvatarAsset} playerName={playerProfile.name} />
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }
 
@@ -1527,6 +1664,13 @@ function CollisionLabApp({
 
   function getSpriteFrame(object: SimObject, objects: SimObject[], sheet: SpriteSheetConfig) {
     const emotion = getObjectSpriteEmotion(object, objects);
+    const manifestFrame = sheet.frames?.[emotion];
+    if (manifestFrame) {
+      return {
+        ...manifestFrame,
+        renderAspectRatio: manifestFrame.width / manifestFrame.height
+      };
+    }
     const frameWidth = sheet.frameWidth ?? sheet.frameSize ?? 1;
     const frameHeight = sheet.frameHeight ?? sheet.frameSize ?? frameWidth;
     const row = sheet.layout === "horizontal-emotions" ? 0 : SPRITE_EMOTION_ROWS[emotion];
@@ -2065,8 +2209,6 @@ type SnakeStatus = "ready" | "running" | "paused" | "won" | "lost";
 
 type GestureCameraStatus = "off" | "loading" | "ready" | "blocked" | "error";
 
-type HandGesture = SnakeDirection | "fist" | "none";
-
 type SnakeGameState = {
   snake: SnakeCell[];
   direction: SnakeDirection;
@@ -2075,6 +2217,18 @@ type SnakeGameState = {
   score: number;
   strikes: number;
   status: SnakeStatus;
+};
+
+type SavedWordSnakeState = {
+  version: 1;
+  wordInput: string;
+  activeWord: string;
+  gameState: SnakeGameState;
+  isSnakePhraseEditorOpen: boolean;
+  snakeRunId: number;
+  snakeStartedAt: number;
+  snakeEndedAt: number;
+  savedAt: number;
 };
 
 const SNAKE_DIRECTIONS: Record<SnakeDirection, SnakeCell> = {
@@ -2104,21 +2258,33 @@ const SNAKE_MAX_PHRASE_LENGTH = 36;
 const SNAKE_MAX_STRIKES = 3;
 const SNAKE_KEYBOARD_TICK_MS = 240;
 const SNAKE_HAND_CONTROL_TICK_MS = 340;
+const WORD_SNAKE_STATE_STORAGE_KEY = "prompthon-word-snake-state-v1";
 const HAND_LANDMARKER_MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 const HAND_LANDMARKER_WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
-const GESTURE_DIRECTION_COOLDOWN_MS = 420;
 
 function WordSnakeApp({
   activeApplicationId,
-  onSelectApplication
+  onSelectApplication,
+  sharedAvatarAsset,
+  playerProfile
 }: {
   activeApplicationId: ApplicationId;
   onSelectApplication: (applicationId: ApplicationId) => void;
+  sharedAvatarAsset: ObjectShapeAsset | null;
+  playerProfile: PlayerProfile;
 }) {
-  const [wordInput, setWordInput] = useState("VECTOR");
-  const [activeWord, setActiveWord] = useState("VECTOR");
+  const avatarManifest = useArcadeAvatarManifest();
+  const wordSnakeTestMode = useMemo(() => import.meta.env.DEV && new URLSearchParams(window.location.search).get("wordSnakeTest") === "1", []);
+  const [savedWordSnakeState] = useState(() => loadSavedWordSnakeState());
+  const [wordInput, setWordInput] = useState(savedWordSnakeState?.wordInput ?? "VECTOR");
+  const [activeWord, setActiveWord] = useState(savedWordSnakeState?.activeWord ?? "VECTOR");
   const boardSize = useMemo(() => getSnakeBoardSize(activeWord), [activeWord]);
-  const [gameState, setGameState] = useState<SnakeGameState>(() => createSnakeGameState("VECTOR", getSnakeBoardSize("VECTOR")));
+  const [gameState, setGameState] = useState<SnakeGameState>(() => savedWordSnakeState?.gameState ?? createSnakeGameState("VECTOR", getSnakeBoardSize("VECTOR")));
+  const [isSnakePhraseEditorOpen, setIsSnakePhraseEditorOpen] = useState(savedWordSnakeState?.isSnakePhraseEditorOpen ?? true);
+  const [snakeRunId, setSnakeRunId] = useState(savedWordSnakeState?.snakeRunId ?? 0);
+  const [snakeStartedAt, setSnakeStartedAt] = useState(savedWordSnakeState?.snakeStartedAt ?? 0);
+  const [snakeEndedAt, setSnakeEndedAt] = useState(savedWordSnakeState?.snakeEndedAt ?? 0);
+  const [snakeLeaderboardRevision, setSnakeLeaderboardRevision] = useState(0);
   const [gestureCameraStatus, setGestureCameraStatus] = useState<GestureCameraStatus>("off");
   const [activeGesture, setActiveGesture] = useState<HandGesture>("none");
   const [gestureMessage, setGestureMessage] = useState("Camera off");
@@ -2126,13 +2292,15 @@ function WordSnakeApp({
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
   const gestureFrameRef = useRef<number | null>(null);
-  const lastGestureDirectionAtRef = useRef(0);
-  const pendingDirectionRef = useRef<SnakeDirection>("right");
+  const gestureSamplesRef = useRef<HandGesture[]>([]);
+  const lastGestureSampleAtRef = useRef(0);
+  const confirmedGestureRef = useRef<HandGesture>("none");
+  const pendingDirectionRef = useRef<SnakeDirection>(savedWordSnakeState?.gameState.direction ?? "right");
 
   const nextCharacter = activeWord[gameState.progress] ?? "";
-  const isHandControlActive = gestureCameraStatus === "ready";
+  const isHandControlActive = gestureCameraStatus === "ready" || wordSnakeTestMode;
   const activeSnakeSpeedMs = isHandControlActive ? SNAKE_HAND_CONTROL_TICK_MS : SNAKE_KEYBOARD_TICK_MS;
-  const keyboardControlsDisabled = isHandControlActive;
+  const keyboardControlsDisabled = !isHandControlActive;
 
   function resetSnake(nextWord = activeWord) {
     const normalizedWord = normalizeSnakePhrase(nextWord);
@@ -2141,19 +2309,48 @@ function WordSnakeApp({
     setActiveWord(normalizedWord);
     setWordInput(normalizedWord);
     setGameState(createSnakeGameState(normalizedWord, nextBoardSize));
+    setSnakeRunId((value) => value + 1);
+    setSnakeStartedAt(0);
+    setSnakeEndedAt(0);
+    resetGestureSampling();
+  }
+
+  function resetGestureSampling() {
+    gestureSamplesRef.current = [];
+    lastGestureSampleAtRef.current = performance.now();
+    confirmedGestureRef.current = "none";
+    setActiveGesture("none");
   }
 
   function startSnake() {
+    if (!isHandControlActive) {
+      return;
+    }
     if (gameState.status === "won" || gameState.status === "lost") {
       resetSnake(activeWord);
       setGameState((state) => ({ ...state, status: "running" }));
       return;
     }
+    setSnakeStartedAt((value) => value || performance.now());
     setGameState((state) => ({ ...state, status: "running" }));
+  }
+
+  function startSnakeFromOverlay() {
+    if (gestureCameraStatus === "ready" || wordSnakeTestMode) {
+      startSnake();
+      return;
+    }
+    void startGestureCamera(true);
   }
 
   function pauseSnake() {
     setGameState((state) => ({ ...state, status: state.status === "running" ? "paused" : state.status }));
+  }
+
+  function resetSnakeWithPhraseOptions() {
+    resetSnake(activeWord);
+    setWordInput(activeWord);
+    setIsSnakePhraseEditorOpen(true);
   }
 
   function applyDirection(nextDirection: SnakeDirection, source: "keyboard" | "gesture" | "button" = "keyboard") {
@@ -2161,10 +2358,9 @@ function WordSnakeApp({
       return;
     }
     pendingDirectionRef.current = nextDirection;
-    setGameState((state) => (state.status === "ready" ? { ...state, status: "running" } : state));
   }
 
-  async function startGestureCamera() {
+  async function startGestureCamera(startSnakeWhenReady = false) {
     if (gestureCameraStatus === "loading" || gestureCameraStatus === "ready") {
       return;
     }
@@ -2208,8 +2404,13 @@ function WordSnakeApp({
         });
       }
       setGestureCameraStatus("ready");
-      setGestureMessage("Show a pointing hand");
+      resetGestureSampling();
+      setGestureMessage("Sampling gesture");
       runGestureLoop();
+      if (startSnakeWhenReady) {
+        setSnakeStartedAt((value) => value || performance.now());
+        setGameState((state) => ({ ...state, status: "running" }));
+      }
     } catch (error) {
       stopGestureCamera("error");
       setGestureMessage(error instanceof DOMException && error.name === "NotAllowedError" ? "Camera blocked" : "Camera failed");
@@ -2226,7 +2427,7 @@ function WordSnakeApp({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    setActiveGesture("none");
+    resetGestureSampling();
     setGestureCameraStatus(nextStatus);
     if (nextStatus === "off") {
       setGestureMessage("Camera off");
@@ -2242,16 +2443,30 @@ function WordSnakeApp({
         return;
       }
 
-      const result = landmarker.detectForVideo(video, performance.now());
-      const gesture = classifyHandGesture(result.landmarks[0]);
-      setActiveGesture(gesture);
-      setGestureMessage(formatHandGestureMessage(gesture));
-      if (gesture !== "none" && gesture !== "fist") {
-        const now = performance.now();
-        if (now - lastGestureDirectionAtRef.current > GESTURE_DIRECTION_COOLDOWN_MS) {
-          lastGestureDirectionAtRef.current = now;
-          applyDirection(gesture, "gesture");
+      const now = performance.now();
+      if (now - lastGestureSampleAtRef.current < GESTURE_SAMPLE_INTERVAL_MS) {
+        gestureFrameRef.current = requestAnimationFrame(detectFrame);
+        return;
+      }
+      lastGestureSampleAtRef.current = now;
+
+      const result = landmarker.detectForVideo(video, now);
+      const sample = classifyHandGesture(result.landmarks[0]);
+      const samples = [...gestureSamplesRef.current, sample].slice(-GESTURE_SAMPLE_WINDOW_SIZE);
+      gestureSamplesRef.current = samples;
+      const consensus = resolveGestureConsensus(samples);
+
+      if (!consensus) {
+        confirmedGestureRef.current = "none";
+        setActiveGesture("none");
+        setGestureMessage(samples.length < GESTURE_SAMPLE_WINDOW_SIZE ? `Sampling gesture ${samples.length}/${GESTURE_SAMPLE_WINDOW_SIZE}` : "Hold gesture steady");
+      } else {
+        setActiveGesture(consensus);
+        setGestureMessage(formatHandGestureMessage(consensus));
+        if (consensus !== "fist" && consensus !== "none" && consensus !== confirmedGestureRef.current) {
+          applyDirection(consensus, "gesture");
         }
+        confirmedGestureRef.current = consensus;
       }
       gestureFrameRef.current = requestAnimationFrame(detectFrame);
     };
@@ -2265,6 +2480,10 @@ function WordSnakeApp({
   function handleWordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     resetSnake(wordInput);
+    setIsSnakePhraseEditorOpen(false);
+    if (!wordSnakeTestMode) {
+      void startGestureCamera(false);
+    }
   }
 
   function handleSnakeKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
@@ -2313,6 +2532,49 @@ function WordSnakeApp({
   }, [activeWord, boardSize, gameState.status, activeSnakeSpeedMs]);
 
   useEffect(() => {
+    saveWordSnakeState({
+      version: 1,
+      wordInput,
+      activeWord,
+      gameState,
+      isSnakePhraseEditorOpen,
+      snakeRunId,
+      snakeStartedAt,
+      snakeEndedAt,
+      savedAt: Date.now()
+    });
+  }, [activeWord, gameState, isSnakePhraseEditorOpen, snakeEndedAt, snakeRunId, snakeStartedAt, wordInput]);
+
+  useEffect(() => {
+    if (gameState.status !== "won" && gameState.status !== "lost") {
+      return;
+    }
+    setSnakeEndedAt((value) => value || performance.now());
+  }, [gameState.status]);
+
+  useEffect(() => {
+    if ((gameState.status !== "won" && gameState.status !== "lost") || !snakeEndedAt) {
+      return;
+    }
+    const storageKey = import.meta.env.VITE_ARCADE_LEADERBOARD_STORAGE_KEY || "prompthon-avatar-arcade-leaderboard-v1";
+    const submittedKey = `word-snake-submitted-${snakeRunId}`;
+    if (sessionStorage.getItem(submittedKey)) {
+      return;
+    }
+    const store = createLeaderboardStore(window.localStorage, storageKey);
+    store.addEntry(buildWordSnakeEntry({
+      playerName: playerProfile.name,
+      score: gameState.score,
+      progress: gameState.progress,
+      phraseLength: activeWord.length,
+      durationMs: Math.max(0, Math.round(snakeEndedAt - (snakeStartedAt || snakeEndedAt))),
+      won: gameState.status === "won"
+    }));
+    sessionStorage.setItem(submittedKey, "true");
+    setSnakeLeaderboardRevision((value) => value + 1);
+  }, [activeWord.length, gameState.progress, gameState.score, gameState.status, playerProfile.name, snakeEndedAt, snakeRunId, snakeStartedAt]);
+
+  useEffect(() => {
     return () => {
       if (gestureFrameRef.current !== null) {
         cancelAnimationFrame(gestureFrameRef.current);
@@ -2355,16 +2617,59 @@ function WordSnakeApp({
               <section className="mx-auto grid h-full min-h-0 max-w-[1440px] grid-rows-[minmax(0,1fr)_auto] gap-4 max-sm:h-auto max-sm:min-h-full max-sm:grid-rows-none">
                 <section className="grid min-h-0 grid-cols-[minmax(0,1fr)_340px] gap-4 overflow-hidden max-lg:grid-cols-1 max-lg:grid-rows-none max-lg:overflow-visible">
                   <Card className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden py-0">
-                    <CardContent className="grid min-h-12 grid-cols-[auto_auto_auto] items-center justify-between gap-3 border-b p-3 max-sm:flex max-sm:flex-col max-sm:items-stretch">
-                      <div className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                        <span className={cn("size-2.5 rounded-full ring-4", gameState.status === "running" ? "bg-emerald-600 ring-emerald-600/15" : "bg-primary ring-primary/15")} />
-                        {formatSnakeStatus(gameState.status)}
+                    <CardContent className="grid min-h-12 grid-cols-[minmax(260px,1fr)_auto_auto] items-center gap-3 border-b p-3 max-lg:grid-cols-[1fr_auto_auto] max-sm:flex max-sm:flex-col max-sm:items-stretch">
+                      <div className="min-w-0 rounded-lg border border-input bg-card px-3 py-2 max-lg:order-4 max-lg:col-span-3 max-sm:order-none">
+                        {isSnakePhraseEditorOpen ? (
+                          <form className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2" onSubmit={handleWordSubmit}>
+                            <Field className="gap-1">
+                              <FieldLabel htmlFor="word-snake-input">Enter the words to play</FieldLabel>
+                              <Input
+                                id="word-snake-input"
+                                value={wordInput}
+                                maxLength={SNAKE_MAX_PHRASE_LENGTH}
+                                onChange={(event) => setWordInput(event.target.value)}
+                                onFocus={(event) => event.currentTarget.select()}
+                                className="h-9 text-base font-black"
+                              />
+                            </Field>
+                            <Button type="submit" size="icon" className="h-9 w-9" aria-label="Confirm words" title="Confirm words">
+                              <Check />
+                            </Button>
+                          </form>
+                        ) : (
+                          <div className="grid gap-2">
+                            <div className="flex items-center justify-end">
+                              <Badge variant="secondary">{gameState.progress}/{activeWord.length}</Badge>
+                            </div>
+                            <SnakePhrasePreview phrase={activeWord} progress={gameState.progress} />
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center justify-center gap-1.5">
-                        <Button type="button" size="icon" variant="outline" aria-label={gameState.status === "running" ? "Pause" : "Play"} title={gameState.status === "running" ? "Pause" : "Play"} onClick={gameState.status === "running" ? pauseSnake : startSnake}>
-                          {gameState.status === "running" ? <Pause /> : <Play />}
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant={gestureCameraStatus === "ready" ? "outline" : "default"}
+                          aria-label={gestureCameraStatus === "ready" ? "Turn camera off" : "Turn camera on"}
+                          title={isSnakePhraseEditorOpen ? "Confirm words first" : gestureCameraStatus === "ready" ? "Camera off" : gestureCameraStatus === "loading" ? "Loading camera" : "Camera on"}
+                          disabled={isSnakePhraseEditorOpen || gestureCameraStatus === "loading"}
+                          onClick={gestureCameraStatus === "ready" ? () => stopGestureCamera() : () => void startGestureCamera(false)}
+                        >
+                          {gestureCameraStatus === "ready" ? <CameraOff /> : <Camera />}
                         </Button>
-                        <Button type="button" size="icon" variant="outline" aria-label="Reset" title="Reset" onClick={() => resetSnake(activeWord)}>
+                        {gameState.status === "running" || gameState.status === "paused" ? (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="outline"
+                            aria-label={gameState.status === "running" ? "Pause" : "Play"}
+                            title={gameState.status === "running" ? "Pause" : "Play"}
+                            onClick={gameState.status === "running" ? pauseSnake : startSnake}
+                          >
+                            {gameState.status === "running" ? <Pause /> : <Play />}
+                          </Button>
+                        ) : null}
+                        <Button type="button" size="icon" variant="outline" aria-label="Reset" title="Reset" onClick={resetSnakeWithPhraseOptions}>
                           <RotateCcw />
                         </Button>
                       </div>
@@ -2375,128 +2680,105 @@ function WordSnakeApp({
                     </CardContent>
 
                     <CardContent
-                      className="grid min-h-0 place-items-center overflow-hidden bg-[#f8fbf7] p-4"
+                      className="relative grid min-h-0 place-items-center overflow-hidden bg-[#f8fbf7] p-4"
                       tabIndex={0}
                       onKeyDown={handleSnakeKeyDown}
                     >
                       <div
-                        className="grid aspect-square w-full max-w-full overflow-hidden rounded-lg border-2 border-[#07111f] bg-[#eef7ed] shadow-sm"
+                        key={snakeRunId}
+                        className="relative grid aspect-square w-full max-w-full overflow-hidden rounded-lg border-2 border-[#07111f] bg-[#eef7ed] shadow-sm"
                         style={{
                           gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`,
                           gridTemplateRows: `repeat(${boardSize}, minmax(0, 1fr))`,
                           maxWidth: "min(72vh, 880px, calc(100vw - 80px))"
                         }}
                         aria-label={`${WORD_SNAKE_CONFIG.name} board`}
-                        data-control-mode={isHandControlActive ? "camera" : "keyboard"}
+                        data-control-mode={wordSnakeTestMode ? "test" : isHandControlActive ? "camera" : "keyboard"}
                         data-keyboard-disabled={keyboardControlsDisabled ? "true" : "false"}
                         data-snake-speed-ms={activeSnakeSpeedMs}
                       >
                         {Array.from({ length: boardSize * boardSize }, (_, index) => {
                           const cell = { x: index % boardSize, y: Math.floor(index / boardSize) };
-                          const snakeIndex = gameState.snake.findIndex((segment) => sameSnakeCell(segment, cell));
                           const target = gameState.targets.find((item) => sameSnakeCell(item, cell));
-                          const isSnake = snakeIndex >= 0;
+                          const isSnake = gameState.snake.some((segment) => sameSnakeCell(segment, cell));
 
                           return (
                             <div
                               key={`${cell.x}-${cell.y}`}
                               className="relative grid min-h-0 min-w-0 place-items-center overflow-visible border border-[rgba(7,17,31,0.055)]"
                             >
-                              {isSnake ? <SnakeSegment snake={gameState.snake} segmentIndex={snakeIndex} /> : null}
                               {target && !isSnake ? (
                                 <SnakeTargetMarker target={target} />
                               ) : null}
                             </div>
                           );
                         })}
+                        {gameState.snake.map((segment, segmentIndex) => {
+                          const cellSizePercent = 100 / boardSize;
+                          return (
+                            <div
+                              key={segmentIndex}
+                              className="pointer-events-none absolute z-10 transition-[left,top] ease-linear motion-reduce:transition-none"
+                              data-snake-motion-segment={segmentIndex}
+                              data-snake-x={segment.x}
+                              data-snake-y={segment.y}
+                              data-snake-transition-ms={gameState.status === "running" ? activeSnakeSpeedMs : 0}
+                              style={{
+                                left: `${segment.x * cellSizePercent}%`,
+                                top: `${segment.y * cellSizePercent}%`,
+                                width: `${cellSizePercent}%`,
+                                height: `${cellSizePercent}%`,
+                                transitionDuration: gameState.status === "running" ? `${activeSnakeSpeedMs}ms` : "0ms"
+                              }}
+                            >
+                              <SnakeSegment
+                                snake={gameState.snake}
+                                segmentIndex={segmentIndex}
+                                avatarAsset={sharedAvatarAsset}
+                                avatarManifest={avatarManifest}
+                                expression={getSnakeAvatarExpression(gameState.status, false)}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
+                      {!isSnakePhraseEditorOpen && gameState.status === "ready" ? (
+                        <GameStartOverlay onStart={startSnakeFromOverlay} disabled={gestureCameraStatus === "loading"} className="inset-4" />
+                      ) : null}
                     </CardContent>
                   </Card>
 
                   <Card className="min-h-0 min-w-0 overflow-hidden py-0">
-                    <CardHeader className="border-b py-3">
-                        <CardTitle className="flex items-center gap-2 text-sm uppercase text-muted-foreground">
-                        <Target className="size-4" />
-                        Phrase
-                      </CardTitle>
-                    </CardHeader>
                     <ScrollArea className="min-h-0 flex-1">
                       <CardContent className="grid gap-4 p-3">
-                        <form className="grid gap-2" onSubmit={handleWordSubmit}>
-                          <Field>
-                            <FieldLabel htmlFor="word-snake-input">Sentence or phrase</FieldLabel>
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                              <Input
-                                id="word-snake-input"
-                                value={wordInput}
-                                maxLength={SNAKE_MAX_PHRASE_LENGTH}
-                                onChange={(event) => setWordInput(event.target.value)}
-                                onFocus={(event) => event.currentTarget.select()}
-                                className="text-base font-black"
-                              />
-                              <Button type="submit">Set</Button>
-                            </div>
-                          </Field>
-                        </form>
-
-                        <div className="grid gap-2 rounded-lg border border-input p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-black uppercase text-muted-foreground">Next</span>
-                            <Badge variant="secondary">{gameState.progress}/{activeWord.length}</Badge>
-                          </div>
-                          <SnakePhrasePreview phrase={activeWord} progress={gameState.progress} />
-                        </div>
-
-                        <div className="grid gap-3 rounded-lg border border-input p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 text-sm font-black">
-                                <Hand className="size-4 text-primary" />
-                                Hand control
-                              </div>
-                              <div className="mt-1 text-xs font-semibold text-muted-foreground">{gestureMessage}</div>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={gestureCameraStatus === "ready" ? "outline" : "default"}
-                              disabled={gestureCameraStatus === "loading"}
-                              onClick={gestureCameraStatus === "ready" ? () => stopGestureCamera() : startGestureCamera}
-                            >
-                              {gestureCameraStatus === "ready" ? <CameraOff data-icon="inline-start" /> : <Camera data-icon="inline-start" />}
-                              {gestureCameraStatus === "ready" ? "Off" : gestureCameraStatus === "loading" ? "Loading" : "Camera"}
-                            </Button>
-                          </div>
-                          <div className="grid grid-cols-[104px_minmax(0,1fr)] items-center gap-3">
-                            <div className="relative aspect-[4/3] overflow-hidden rounded-lg border bg-muted">
-                              <video
-                                ref={videoRef}
-                                className={cn(
-                                  "size-full scale-x-[-1] object-cover",
-                                  gestureCameraStatus === "ready" ? "opacity-100" : "opacity-0"
+                        <div className="rounded-lg border border-input p-3">
+                          <div className="relative aspect-[3/4] overflow-hidden rounded-lg border bg-muted">
+                            <video
+                              ref={videoRef}
+                              className={cn(
+                                "size-full scale-x-[-1] object-cover",
+                                gestureCameraStatus === "ready" ? "opacity-100" : "opacity-0"
+                              )}
+                              muted
+                              playsInline
+                              aria-label="Hand control camera preview"
+                            />
+                            {gestureCameraStatus !== "ready" ? (
+                              <div className="absolute inset-0 grid place-items-center text-muted-foreground">
+                                {isSnakePhraseEditorOpen ? (
+                                  <div className="max-w-44 px-4 text-center text-sm font-black leading-snug">
+                                    Confirm your input to enable the camera.
+                                  </div>
+                                ) : (
+                                  <Camera className="size-8" />
                                 )}
-                                muted
-                                playsInline
-                                aria-label="Hand control camera preview"
-                              />
-                              {gestureCameraStatus !== "ready" ? (
-                                <div className="absolute inset-0 grid place-items-center text-muted-foreground">
-                                  <Camera className="size-5" />
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className="grid gap-2">
-                              <div className="flex flex-wrap gap-1.5">
-                                {(["up", "left", "right", "down", "fist"] as HandGesture[]).map((gesture) => (
-                                  <Badge key={gesture} variant={activeGesture === gesture ? "default" : "secondary"}>
-                                    {formatHandGestureLabel(gesture)}
-                                  </Badge>
-                                ))}
                               </div>
-                              <p className="text-xs font-medium text-muted-foreground">Point with one finger to steer. Make a fist to hold direction input.</p>
-                            </div>
+                            ) : null}
+                            <GestureDirectionPad activeGesture={activeGesture} className="absolute bottom-3 right-3" />
                           </div>
                         </div>
+
+                        <WordSnakeLeaderboard revision={snakeLeaderboardRevision} />
 
                       </CardContent>
                     </ScrollArea>
@@ -2532,14 +2814,85 @@ function WordSnakeApp({
 function AvatarSettingsApp({
   activeApplicationId,
   onSelectApplication,
-  sharedAvatarAsset
+  sharedAvatarAsset,
+  playerProfile,
+  onUpdatePlayerProfile
 }: {
   activeApplicationId: ApplicationId;
   onSelectApplication: (applicationId: ApplicationId) => void;
   sharedAvatarAsset: ObjectShapeAsset | null;
+  playerProfile: PlayerProfile;
+  onUpdatePlayerProfile: (profile: PlayerProfile) => void;
 }) {
   const liveAvatarAsset = useLiveSpriteSheetAsset();
-  const visibleAvatarAsset = liveAvatarAsset ?? sharedAvatarAsset ?? SPRITE_TEMPLATE_ASSET;
+  const [avatarPreviewMode, setAvatarPreviewMode] = useState<"live" | "template">("live");
+  const [isResetPlayerOpen, setIsResetPlayerOpen] = useState(false);
+  const [draftPlayerName, setDraftPlayerName] = useState(playerProfile.name);
+  const [resetPlayerStep, setResetPlayerStep] = useState<ResetPlayerStep>(1);
+  const [resetBaselineVersion, setResetBaselineVersion] = useState("");
+  const [resetResultImagePath, setResetResultImagePath] = useState(LIVE_SPRITE_SHEET_PATH);
+  const generatedAvatarAsset = liveAvatarAsset ?? sharedAvatarAsset;
+  const hasGeneratedAvatarAsset = Boolean(generatedAvatarAsset);
+  const visibleAvatarAsset =
+    avatarPreviewMode === "template" ? SPRITE_TEMPLATE_ASSET : generatedAvatarAsset ?? SPRITE_TEMPLATE_ASSET;
+  const resetPlayerImagePath = generatedAvatarAsset?.dataUrl ?? LIVE_SPRITE_SHEET_PATH;
+
+  function openResetPlayerModal() {
+    setDraftPlayerName(playerProfile.name);
+    setResetPlayerStep(1);
+    setResetBaselineVersion(liveAvatarAsset?.version ?? "");
+    setResetResultImagePath(resetPlayerImagePath);
+    setIsResetPlayerOpen(true);
+  }
+
+  function saveResetPlayerWithImage(imagePath = resetPlayerImagePath) {
+    setResetResultImagePath(imagePath);
+    onUpdatePlayerProfile({
+      name: draftPlayerName.trim() || DEFAULT_PLAYER_PROFILE.name,
+      imagePath
+    });
+  }
+
+  function saveResetPlayer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    saveResetPlayerWithImage();
+    setIsResetPlayerOpen(false);
+  }
+
+  function useDefaultPlayerImage() {
+    saveResetPlayerWithImage(SPRITE_TEMPLATE_PATH);
+    setResetPlayerStep(3);
+  }
+
+  function startPlayingWithResetPlayer() {
+    saveResetPlayerWithImage();
+    setIsResetPlayerOpen(false);
+    onSelectApplication("stellar-dance");
+  }
+
+  function printResetPlayerSticker() {
+    const printTarget = resetResultImagePath === SPRITE_TEMPLATE_PATH
+      ? SPRITE_TEMPLATE_PATH
+      : generatedAvatarAsset?.previewUrl ?? generatedAvatarAsset?.dataUrl ?? resetResultImagePath;
+    const printWindow = window.open("", "_blank", "noopener,noreferrer");
+    if (!printWindow) {
+      return;
+    }
+    printWindow.document.write(`<!doctype html><html><head><title>Print sticker</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:white}img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="${printTarget}" alt="Sticker sheet"></body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  useEffect(() => {
+    if (!isResetPlayerOpen || resetPlayerStep !== 2 || !liveAvatarAsset?.version) {
+      return;
+    }
+    if (liveAvatarAsset.version !== resetBaselineVersion) {
+      saveResetPlayerWithImage(liveAvatarAsset.dataUrl);
+      setResetPlayerStep(3);
+    }
+  }, [isResetPlayerOpen, liveAvatarAsset, resetBaselineVersion, resetPlayerStep]);
 
   return (
     <TooltipProvider>
@@ -2562,7 +2915,12 @@ function AvatarSettingsApp({
                   <p className="mt-0.5 truncate text-[11px] font-medium leading-tight text-muted-foreground">{SETTINGS_CONFIG.subtitle}</p>
                 </div>
               </div>
-              <Badge variant="secondary">Sprite guide</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Player: {playerProfile.name}</Badge>
+                <Button type="button" variant="outline" size="sm" onClick={openResetPlayerModal}>
+                  Reset Player
+                </Button>
+              </div>
             </header>
 
             <section className="min-h-0 flex-1 overflow-hidden p-4 max-sm:overflow-y-auto max-sm:overflow-x-hidden max-sm:p-3">
@@ -2581,7 +2939,7 @@ function AvatarSettingsApp({
                         <Badge variant="secondary">4 in x 7 in</Badge>
                       </div>
                       <p className="font-medium leading-relaxed text-muted-foreground">
-                        The final sheet starts from a pure white header with the square source photo first, Discord QR second, and the FIRA 2026 plus Prompthon.io logos on the right, then fills the 3 x 4 grid with six emotions and two variations each.
+                        The template starts from a pure white header with a square source-photo placeholder first, Discord QR second, and the FIRA 2026 plus Prompthon.io logos on the right. The live sheet replaces the placeholder with the current source photo and fills the 3 x 4 grid with six emotions and two variations each.
                       </p>
                       <code className="rounded-md bg-muted px-2 py-1 text-xs font-bold text-muted-foreground">
                         public/generated-avatar/sprite-template-4x7.png
@@ -2592,8 +2950,8 @@ function AvatarSettingsApp({
                       <h2 className="text-sm font-black">Agent steps</h2>
                       <ol className="grid gap-2 text-muted-foreground">
                         <li className="leading-relaxed"><span className="font-black text-foreground">1.</span> Keep the 1200 x 2100 template canvas unchanged.</li>
-                        <li className="leading-relaxed"><span className="font-black text-foreground">2.</span> Preserve the fixed header order: square photo, QR code, then logos.</li>
-                        <li className="leading-relaxed"><span className="font-black text-foreground">3.</span> Fill the slots left-to-right, top-to-bottom: two versions of each emotion.</li>
+                        <li className="leading-relaxed"><span className="font-black text-foreground">2.</span> Restore the real cropped source photo, canonical QR code, and logos from the manifest after generation.</li>
+                        <li className="leading-relaxed"><span className="font-black text-foreground">3.</span> Use the local ImageGen result only for the 12 sticker slots, left-to-right and top-to-bottom.</li>
                         <li className="leading-relaxed"><span className="font-black text-foreground">4.</span> Write preview updates to the live preview path; do not refresh the browser page during generation.</li>
                       </ol>
                     </section>
@@ -2612,6 +2970,41 @@ function AvatarSettingsApp({
                     </section>
 
                     <section className="grid gap-2 rounded-lg border border-input bg-card p-3">
+                      <h2 className="text-sm font-black">Header asset geometry</h2>
+                      <p className="text-xs font-semibold leading-relaxed text-muted-foreground">
+                        The live sheet puts the original photo as a face-centered square crop in the upper-left header. The
+                        template keeps the same geometry with a neutral placeholder and no real person.
+                      </p>
+                      <div className="grid gap-2">
+                        {AVATAR_TEMPLATE_HEADER_GEOMETRY.map((item) => (
+                          <div key={item.label} className="rounded-md bg-muted px-2 py-1 text-[11px] font-bold leading-tight text-muted-foreground">
+                            <div className="uppercase text-foreground">{item.label}</div>
+                            <div>{item.bounds}</div>
+                            <div>{item.note}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="grid gap-2 rounded-lg border border-input bg-card p-3">
+                      <h2 className="text-sm font-black">Slot geometry contract</h2>
+                      <p className="text-xs font-semibold leading-relaxed text-muted-foreground">
+                        Canvas: 1200 x 2100 px. Header: 0,0 to 1200,340. Every generated avatar must fit the existing
+                        310 px circle only. Circle scale: 25.83% of canvas width, 14.76% of canvas height. x columns
+                        70/445/820, y rows 360/750/1140/1530, centers 225/600/975 by 515/905/1295/1685.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {AVATAR_TEMPLATE_SLOT_GEOMETRY.map((slot) => (
+                          <div key={slot.slot} className="rounded-md bg-muted px-2 py-1 text-[11px] font-bold leading-tight text-muted-foreground">
+                            <div className="uppercase text-foreground">{slot.slot} {slot.sticker}</div>
+                            <div>x={slot.x} y={slot.y} d=310</div>
+                            <div>center=({slot.center})</div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="grid gap-2 rounded-lg border border-input bg-card p-3">
                       <h2 className="text-sm font-black">Sticker fill order</h2>
                       <div className="grid grid-cols-2 gap-2">
                         {AVATAR_TEMPLATE_STICKERS.map((sticker) => (
@@ -2625,7 +3018,7 @@ function AvatarSettingsApp({
                     <section className="grid gap-2 rounded-lg border border-input bg-card p-3">
                       <h2 className="text-sm font-black">Visual rules</h2>
                       <ul className="grid gap-1.5 font-medium text-muted-foreground">
-                        <li>ImageGen-catalyzed cartoon avatars, not direct photo markup.</li>
+                        <li>Local ImageGen model cartoon avatars, not direct photo markup.</li>
                         <li>Fixed 4 in x 7 in sheet ratio for every output.</li>
                         <li>Avatar artwork must stay inside each light gray dashed circle slot.</li>
                         <li>Use cute but exaggerated expressions, with two distinct variants per emotion.</li>
@@ -2636,7 +3029,7 @@ function AvatarSettingsApp({
                     <section className="grid gap-2 rounded-lg border border-input bg-card p-3">
                       <h2 className="text-sm font-black">Live preview path</h2>
                       <p className="font-medium leading-relaxed text-muted-foreground">
-                        The preview panel watches this file and updates in place when Codex writes a new ImageGen result.
+                        The preview panel watches this file and updates in place when Codex writes a new local ImageGen result.
                       </p>
                       <code className="rounded-md bg-muted px-2 py-1 text-xs font-bold text-muted-foreground">
                         {LIVE_SPRITE_SHEET_PREVIEW_PATH}
@@ -2651,7 +3044,29 @@ function AvatarSettingsApp({
                       <ImageIcon className="size-4" />
                       Sprite sheet preview
                     </CardTitle>
-                    <CardAction>
+                    <CardAction className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={avatarPreviewMode === "template" ? "secondary" : "outline"}
+                        size="sm"
+                        aria-pressed={avatarPreviewMode === "template"}
+                        onClick={() => setAvatarPreviewMode("template")}
+                      >
+                        <ImageIcon data-icon="inline-start" />
+                        Template
+                      </Button>
+                      {hasGeneratedAvatarAsset ? (
+                        <Button
+                          type="button"
+                          variant={avatarPreviewMode === "live" ? "secondary" : "outline"}
+                          size="sm"
+                          aria-pressed={avatarPreviewMode === "live"}
+                          onClick={() => setAvatarPreviewMode("live")}
+                        >
+                          <Sparkles data-icon="inline-start" />
+                          Live sprite sheet
+                        </Button>
+                      ) : null}
                       {visibleAvatarAsset ? (
                         <a
                           href={visibleAvatarAsset.dataUrl}
@@ -2678,7 +3093,7 @@ function AvatarSettingsApp({
                         <div className="grid justify-items-center gap-3 px-4 text-center text-muted-foreground">
                           <ImageIcon className="size-8" />
                           <div>
-                            <div className="text-sm font-black text-foreground">Awaiting ImageGen sprite sheet</div>
+                            <div className="text-sm font-black text-foreground">Awaiting local ImageGen sprite sheet</div>
                             <div className="mt-1 text-xs font-semibold">Preview updates appear here without refreshing the page.</div>
                           </div>
                         </div>
@@ -2688,10 +3103,229 @@ function AvatarSettingsApp({
                 </Card>
               </section>
             </section>
+
+            {isResetPlayerOpen ? (
+              <div className="fixed inset-0 z-50 grid place-items-center bg-black/20 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-player-title">
+                <form onSubmit={saveResetPlayer} className="grid max-h-[92dvh] w-full max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
+                  <div className="flex items-start justify-between gap-3 border-b p-4">
+                    <div className="min-w-0">
+                      <h2 id="reset-player-title" className="text-lg font-black leading-tight">Reset Player</h2>
+                      <p className="mt-1 text-sm font-medium text-muted-foreground">Set the player name, create a sticker avatar, then start playing.</p>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" aria-label="Close reset player" onClick={() => setIsResetPlayerOpen(false)}>
+                      <X />
+                    </Button>
+                  </div>
+
+                  <div className="grid min-h-0 gap-4 overflow-y-auto p-4">
+                    <div className="grid gap-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { step: 1, label: "Name" },
+                          { step: 2, label: "Create" },
+                          { step: 3, label: "Play" }
+                        ].map((item) => (
+                          <div key={item.step} className="grid gap-1">
+                            <div className={cn("h-2 rounded-full", resetPlayerStep >= item.step ? "bg-primary" : "bg-muted")} />
+                            <div className={cn("text-center text-[11px] font-black uppercase", resetPlayerStep === item.step ? "text-foreground" : "text-muted-foreground")}>
+                              {item.label}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {resetPlayerStep === 1 ? (
+                      <section className="mx-auto grid w-full max-w-xl gap-4 rounded-lg border border-input p-4">
+                        <div>
+                          <h3 className="text-base font-black">Player name</h3>
+                          <p className="mt-1 text-sm font-medium text-muted-foreground">This name is used by Word Snake and the arcade leaderboards.</p>
+                        </div>
+                        <Field>
+                          <FieldLabel htmlFor="player-name">Name</FieldLabel>
+                          <Input
+                            id="player-name"
+                            value={draftPlayerName}
+                            onChange={(event) => setDraftPlayerName(event.target.value)}
+                            placeholder="Enter player name"
+                            autoFocus
+                          />
+                        </Field>
+                      </section>
+                    ) : null}
+
+                    {resetPlayerStep === 2 ? (
+                      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+                        <section className="grid gap-2 rounded-lg border border-input p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-sm font-black">Template</h3>
+                            <Badge variant="secondary">4 x 7</Badge>
+                          </div>
+                          <div className="grid max-h-[58dvh] place-items-center overflow-hidden rounded-lg border bg-[#f8fbf7] p-2">
+                            <img src={SPRITE_TEMPLATE_PREVIEW_PATH} alt="Avatar template preview" className="max-h-[56dvh] max-w-full object-contain" />
+                          </div>
+                        </section>
+
+                        <section className="grid content-start gap-3 rounded-lg border border-input p-3">
+                          <div>
+                            <h3 className="text-sm font-black">Create your play image</h3>
+                            <p className="mt-1 text-sm font-medium leading-relaxed text-muted-foreground">
+                              Create the image with Codex or another AI assistant. This app does not upload your photo.
+                            </p>
+                          </div>
+                          <div className="grid gap-3 rounded-lg border bg-muted/40 p-3 text-sm">
+                            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                              <Badge className="mt-0.5 size-6 justify-center rounded-full p-0">1</Badge>
+                              <div>
+                                <div className="font-black">Attach your photo to Codex</div>
+                                <p className="mt-1 font-medium leading-relaxed text-muted-foreground">
+                                  Add the portrait in your AI conversation, not on this page.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                              <Badge className="mt-0.5 size-6 justify-center rounded-full p-0">2</Badge>
+                              <div>
+                                <div className="font-black">Run the avatar skill</div>
+                                <p className="mt-1 font-medium leading-relaxed text-muted-foreground">
+                                  Enter this slash command with your attached photo:
+                                </p>
+                                <code className="mt-2 block overflow-x-auto rounded-md border bg-background px-3 py-2 text-xs font-black text-foreground">
+                                  /portrait-sprite-sheet-generator
+                                </code>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                              <Badge className="mt-0.5 size-6 justify-center rounded-full p-0">3</Badge>
+                              <div>
+                                <div className="font-black">Keep this window open</div>
+                                <p className="mt-1 font-medium leading-relaxed text-muted-foreground">
+                                  When Codex publishes the generated sprite sheet, the final preview opens automatically.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <Button type="button" variant="outline" onClick={useDefaultPlayerImage}>
+                            Use default one
+                          </Button>
+                          <Button
+                            type="button"
+                            disabled={!generatedAvatarAsset}
+                            onClick={() => {
+                              saveResetPlayerWithImage(resetPlayerImagePath);
+                              setResetPlayerStep(3);
+                            }}
+                          >
+                            Use generated image
+                          </Button>
+                        </section>
+                      </div>
+                    ) : null}
+
+                    {resetPlayerStep === 3 ? (
+                      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+                        <section className="grid gap-2 rounded-lg border border-input p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-sm font-black">Generated image</h3>
+                            <Badge variant={generatedAvatarAsset ? "default" : "secondary"}>{generatedAvatarAsset ? "Ready" : "Default"}</Badge>
+                          </div>
+                          <div className="grid max-h-[58dvh] place-items-center overflow-hidden rounded-lg border bg-[#f8fbf7] p-2">
+                            <img
+                              src={resetResultImagePath === SPRITE_TEMPLATE_PATH
+                                ? SPRITE_TEMPLATE_PREVIEW_PATH
+                                : generatedAvatarAsset?.previewUrl ?? generatedAvatarAsset?.dataUrl ?? resetResultImagePath}
+                              alt="Generated avatar preview"
+                              className="max-h-[56dvh] max-w-full object-contain"
+                            />
+                          </div>
+                          <code className="truncate rounded-md bg-muted px-2 py-1 text-xs font-bold text-muted-foreground">
+                            {resetResultImagePath}
+                          </code>
+                        </section>
+
+                        <section className="grid content-start gap-3 rounded-lg border border-input p-3">
+                          <div>
+                            <h3 className="text-sm font-black">Next actions</h3>
+                            <p className="mt-1 text-sm font-medium text-muted-foreground">Print the sticker sheet or start playing with this player profile.</p>
+                          </div>
+                          <Button type="button" variant="outline" onClick={printResetPlayerSticker}>
+                            <Download data-icon="inline-start" />
+                            Print sticker
+                          </Button>
+                          <Button type="button" onClick={startPlayingWithResetPlayer}>
+                            <Gamepad2 data-icon="inline-start" />
+                            Start to play
+                          </Button>
+                          <Button type="submit" variant="outline">
+                            Done
+                          </Button>
+                        </section>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2 border-t p-4">
+                    <Button type="button" variant="outline" onClick={() => setIsResetPlayerOpen(false)}>Cancel</Button>
+                    {resetPlayerStep > 1 ? (
+                      <Button type="button" variant="outline" onClick={() => setResetPlayerStep((step) => (step - 1) as ResetPlayerStep)}>
+                        Back
+                      </Button>
+                    ) : null}
+                    {resetPlayerStep === 1 ? (
+                      <Button type="button" onClick={() => setResetPlayerStep(2)}>Next</Button>
+                    ) : null}
+                  </div>
+                </form>
+              </div>
+            ) : null}
           </main>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
+  );
+}
+
+function WordSnakeLeaderboard({ revision }: { revision: number }) {
+  const [daily, setDaily] = useState<LeaderboardEntry[]>([]);
+  const [allTime, setAllTime] = useState<LeaderboardEntry[]>([]);
+
+  useEffect(() => {
+    const storageKey = import.meta.env.VITE_ARCADE_LEADERBOARD_STORAGE_KEY || "prompthon-avatar-arcade-leaderboard-v1";
+    const store = createLeaderboardStore(window.localStorage, storageKey);
+    setDaily(store.getDailyLeaderboard("word-snake"));
+    setAllTime(store.getAllTimeLeaderboard("word-snake"));
+  }, [revision]);
+
+  return (
+    <section className="grid gap-3 rounded-lg border border-input p-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-black">Leaderboards</h2>
+        <Badge variant="secondary">Local</Badge>
+      </div>
+      <div className="grid gap-3">
+        <WordSnakeLeaderboardList title="Daily" entries={daily} />
+        <WordSnakeLeaderboardList title="All time" entries={allTime} />
+      </div>
+    </section>
+  );
+}
+
+function WordSnakeLeaderboardList({ title, entries }: { title: string; entries: LeaderboardEntry[] }) {
+  return (
+    <div className="grid gap-2">
+      <div className="text-xs font-black uppercase text-muted-foreground">{title}</div>
+      {entries.length === 0 ? (
+        <div className="rounded-md bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">No scores yet</div>
+      ) : (
+        entries.slice(0, 3).map((entry, index) => (
+          <div key={entry.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-sm">
+            <span className="grid size-6 place-items-center rounded-full bg-primary text-xs font-black text-primary-foreground">{index + 1}</span>
+            <span className="truncate font-semibold">{entry.playerName}</span>
+            <span className="font-black">{entry.score}</span>
+          </div>
+        ))
+      )}
+    </div>
   );
 }
 
@@ -2714,8 +3348,8 @@ function PrimarySidebar({
             alt="Prompthon Community"
           />
           <img
-            className="hidden size-11 object-contain group-data-[collapsible=icon]:block"
-            src={prompthonSquareLogo}
+            className="hidden size-11 rounded-lg object-contain group-data-[collapsible=icon]:block"
+            src={prompthonSquareDarkLogo}
             alt="Prompthon"
           />
         </div>
@@ -2764,6 +3398,59 @@ function PrimarySidebar({
   );
 }
 
+function getSnakeAvatarExpression(status: SnakeStatus, targetHit: boolean): AvatarExpression {
+  if (status === "lost") {
+    return "dizzy";
+  }
+  if (status === "won") {
+    return "excited";
+  }
+  if (targetHit) {
+    return "happy";
+  }
+  if (status === "running") {
+    return "playful";
+  }
+  return "happy";
+}
+
+function GestureDirectionPad({ activeGesture, className }: { activeGesture: HandGesture; className?: string }) {
+  const directionClass = (gesture: HandGesture, className: string) => cn(
+    "grid size-7 place-items-center rounded-full border border-input bg-card text-muted-foreground transition-colors",
+    activeGesture === gesture && "border-primary bg-primary text-primary-foreground shadow-sm",
+    className
+  );
+
+  return (
+    <div
+      className={cn("grid justify-items-center", className)}
+      aria-label="Hand gesture direction pad"
+      data-active-gesture={activeGesture}
+      data-gesture-sample-interval-ms={GESTURE_SAMPLE_INTERVAL_MS}
+      data-gesture-window-size={GESTURE_SAMPLE_WINDOW_SIZE}
+      data-gesture-consensus-threshold={GESTURE_CONSENSUS_THRESHOLD}
+    >
+      <div className="grid size-24 grid-cols-3 grid-rows-3 place-items-center rounded-full border border-input bg-card/85 p-2 shadow-sm backdrop-blur">
+        <span className={directionClass("up", "col-start-2 row-start-1")} aria-label="Up">
+          <ArrowUp className="size-4" />
+        </span>
+        <span className={directionClass("left", "col-start-1 row-start-2")} aria-label="Left">
+          <ArrowLeft className="size-4" />
+        </span>
+        <span className={directionClass("fist", "col-start-2 row-start-2")} aria-label="Hold">
+          <Hand className="size-4" />
+        </span>
+        <span className={directionClass("right", "col-start-3 row-start-2")} aria-label="Right">
+          <ArrowRight className="size-4" />
+        </span>
+        <span className={directionClass("down", "col-start-2 row-start-3")} aria-label="Down">
+          <ArrowDown className="size-4" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function SnakeTargetMarker({ target }: { target: LetterTarget }) {
   const isSpace = target.character === " ";
 
@@ -2801,7 +3488,7 @@ function SnakePhrasePreview({ phrase, progress }: { phrase: string; progress: nu
             )}
             aria-label={`${state} ${formatSnakeCharacterLabel(character)}`}
           >
-            {isSpace ? <span className="size-2 rounded-full bg-current opacity-75" /> : character}
+            {isSpace ? null : character}
           </span>
         );
       })}
@@ -2811,14 +3498,20 @@ function SnakePhrasePreview({ phrase, progress }: { phrase: string; progress: nu
 
 function SnakeSegment({
   snake,
-  segmentIndex
+  segmentIndex,
+  avatarAsset,
+  avatarManifest,
+  expression
 }: {
   snake: SnakeCell[];
   segmentIndex: number;
+  avatarAsset: ObjectShapeAsset | null;
+  avatarManifest: AvatarManifest;
+  expression: AvatarExpression;
 }) {
   const isHead = segmentIndex === 0;
   const isTail = segmentIndex === snake.length - 1;
-  const color = isHead ? "#07111f" : "#10a37f";
+  const color = "#10a37f";
   const connections = getSnakeSegmentConnections(snake, segmentIndex);
   const isEndpoint = isHead || isTail;
   const isStraight =
@@ -2852,7 +3545,15 @@ function SnakeSegment({
           <span className="absolute rounded-[28%]" data-snake-part="elbow" style={getSnakeElbowStyle(color)} />
         </>
       )}
-      {isHead ? (
+      {isHead && avatarAsset ? (
+        <AvatarSprite
+          asset={avatarAsset}
+          manifest={avatarManifest}
+          expression={expression}
+          className="absolute z-20"
+          style={getSnakeHeadAvatarStyle()}
+        />
+      ) : isHead ? (
         <span className="absolute size-[16%] rounded-full bg-white/95 shadow-sm" data-snake-part="eye" style={getSnakeEyeStyle(endpointDirection)} />
       ) : null}
     </div>
@@ -2893,29 +3594,34 @@ function getAdjacentSnakeDirection(from: SnakeCell, to: SnakeCell): SnakeDirecti
   return null;
 }
 
+const SNAKE_TRACK_INSET = "21%";
+const SNAKE_TRACK_SIZE = "58%";
+const SNAKE_HEAD_INSET = "7%";
+const SNAKE_HEAD_SIZE = "86%";
+
 function getSnakeConnectorStyle(direction: SnakeDirection, color: string): CSSProperties {
   const base = {
     backgroundColor: color
   };
   if (direction === "up") {
-    return { ...base, left: "21%", top: "-2px", width: "58%", height: "calc(50% + 2px)" };
+    return { ...base, left: SNAKE_TRACK_INSET, top: "-2px", width: SNAKE_TRACK_SIZE, height: "calc(50% + 2px)" };
   }
   if (direction === "right") {
-    return { ...base, left: "50%", top: "21%", width: "calc(50% + 2px)", height: "58%" };
+    return { ...base, left: "50%", top: SNAKE_TRACK_INSET, width: "calc(50% + 2px)", height: SNAKE_TRACK_SIZE };
   }
   if (direction === "down") {
-    return { ...base, left: "21%", top: "50%", width: "58%", height: "calc(50% + 2px)" };
+    return { ...base, left: SNAKE_TRACK_INSET, top: "50%", width: SNAKE_TRACK_SIZE, height: "calc(50% + 2px)" };
   }
-  return { ...base, left: "-2px", top: "21%", width: "calc(50% + 2px)", height: "58%" };
+  return { ...base, left: "-2px", top: SNAKE_TRACK_INSET, width: "calc(50% + 2px)", height: SNAKE_TRACK_SIZE };
 }
 
 function getSnakeElbowStyle(color: string): CSSProperties {
   return {
     backgroundColor: color,
-    left: "21%",
-    top: "21%",
-    width: "58%",
-    height: "58%"
+    left: SNAKE_TRACK_INSET,
+    top: SNAKE_TRACK_INSET,
+    width: SNAKE_TRACK_SIZE,
+    height: SNAKE_TRACK_SIZE
   };
 }
 
@@ -2924,44 +3630,53 @@ function getSnakeStraightStyle(axis: "horizontal" | "vertical", color: string): 
     return {
       backgroundColor: color,
       left: "-2px",
-      top: "21%",
+      top: SNAKE_TRACK_INSET,
       width: "calc(100% + 4px)",
-      height: "58%"
+      height: SNAKE_TRACK_SIZE
     };
   }
   return {
     backgroundColor: color,
-    left: "21%",
+    left: SNAKE_TRACK_INSET,
     top: "-2px",
-    width: "58%",
+    width: SNAKE_TRACK_SIZE,
     height: "calc(100% + 4px)"
   };
 }
 
 function getSnakeEndpointRectStyle(directionToBody: SnakeDirection, color: string): CSSProperties {
   if (directionToBody === "left") {
-    return { backgroundColor: color, left: "-2px", top: "21%", width: "calc(52% + 2px)", height: "58%" };
+    return { backgroundColor: color, left: "-2px", top: SNAKE_TRACK_INSET, width: "calc(52% + 2px)", height: SNAKE_TRACK_SIZE };
   }
   if (directionToBody === "right") {
-    return { backgroundColor: color, left: "48%", top: "21%", width: "calc(52% + 2px)", height: "58%" };
+    return { backgroundColor: color, left: "48%", top: SNAKE_TRACK_INSET, width: "calc(52% + 2px)", height: SNAKE_TRACK_SIZE };
   }
   if (directionToBody === "up") {
-    return { backgroundColor: color, left: "21%", top: "-2px", width: "58%", height: "calc(52% + 2px)" };
+    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: "-2px", width: SNAKE_TRACK_SIZE, height: "calc(52% + 2px)" };
   }
-  return { backgroundColor: color, left: "21%", top: "48%", width: "58%", height: "calc(52% + 2px)" };
+  return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: "48%", width: SNAKE_TRACK_SIZE, height: "calc(52% + 2px)" };
 }
 
 function getSnakeEndpointCapStyle(directionToBody: SnakeDirection, color: string): CSSProperties {
   if (directionToBody === "left") {
-    return { backgroundColor: color, left: "21%", top: "21%", width: "58%", height: "58%" };
+    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
   }
   if (directionToBody === "right") {
-    return { backgroundColor: color, left: "21%", top: "21%", width: "58%", height: "58%" };
+    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
   }
   if (directionToBody === "up") {
-    return { backgroundColor: color, left: "21%", top: "21%", width: "58%", height: "58%" };
+    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
   }
-  return { backgroundColor: color, left: "21%", top: "21%", width: "58%", height: "58%" };
+  return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
+}
+
+function getSnakeHeadAvatarStyle(): CSSProperties {
+  return {
+    left: SNAKE_HEAD_INSET,
+    top: SNAKE_HEAD_INSET,
+    width: SNAKE_HEAD_SIZE,
+    height: SNAKE_HEAD_SIZE
+  };
 }
 
 function getSnakeEyeStyle(directionToBody: SnakeDirection): CSSProperties {
@@ -2983,6 +3698,126 @@ function normalizeSnakePhrase(value: string) {
     .replace(/\s+/g, " ")
     .slice(0, SNAKE_MAX_PHRASE_LENGTH);
   return normalizedPhrase.trim() ? normalizedPhrase : SNAKE_WORD_FALLBACK;
+}
+
+function loadSavedWordSnakeState(): SavedWordSnakeState | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return normalizeSavedWordSnakeState(window.localStorage.getItem(WORD_SNAKE_STATE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function saveWordSnakeState(state: SavedWordSnakeState) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(WORD_SNAKE_STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Local storage can be unavailable in private or restricted browser modes.
+  }
+}
+
+function normalizeSavedWordSnakeState(rawValue: string | null): SavedWordSnakeState | null {
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const candidate = JSON.parse(rawValue) as Partial<SavedWordSnakeState>;
+    if (candidate.version !== 1 || typeof candidate.activeWord !== "string" || !candidate.gameState) {
+      return null;
+    }
+
+    const activeWord = normalizeSnakePhrase(candidate.activeWord);
+    const boardSize = getSnakeBoardSize(activeWord);
+    const gameState = normalizeSavedSnakeGameState(candidate.gameState, activeWord, boardSize);
+    if (!gameState) {
+      return null;
+    }
+
+    return {
+      version: 1,
+      wordInput: typeof candidate.wordInput === "string" ? candidate.wordInput.slice(0, SNAKE_MAX_PHRASE_LENGTH) : activeWord,
+      activeWord,
+      gameState,
+      isSnakePhraseEditorOpen: candidate.isSnakePhraseEditorOpen === true,
+      snakeRunId: Number.isFinite(candidate.snakeRunId) ? Math.max(0, Math.round(candidate.snakeRunId ?? 0)) : 0,
+      snakeStartedAt: Number.isFinite(candidate.snakeStartedAt) ? Math.max(0, candidate.snakeStartedAt ?? 0) : 0,
+      snakeEndedAt: Number.isFinite(candidate.snakeEndedAt) ? Math.max(0, candidate.snakeEndedAt ?? 0) : 0,
+      savedAt: Number.isFinite(candidate.savedAt) ? Math.max(0, candidate.savedAt ?? 0) : 0
+    };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSavedSnakeGameState(candidate: Partial<SnakeGameState>, activeWord: string, boardSize: number): SnakeGameState | null {
+  if (!isSnakeDirection(candidate.direction) || !isSnakeStatus(candidate.status) || !Array.isArray(candidate.snake) || !Array.isArray(candidate.targets)) {
+    return null;
+  }
+
+  const snake = candidate.snake.filter((cell) => isValidSnakeCell(cell, boardSize));
+  if (snake.length === 0) {
+    return null;
+  }
+
+  const progress = Number.isFinite(candidate.progress) ? Math.round(candidate.progress ?? 0) : 0;
+  if (progress < 0 || progress > activeWord.length) {
+    return null;
+  }
+
+  const targets = candidate.targets.filter((target): target is LetterTarget => (
+    isValidSnakeCell(target, boardSize) &&
+    typeof target.id === "string" &&
+    typeof target.character === "string" &&
+    target.character.length === 1 &&
+    typeof target.isRequired === "boolean"
+  ));
+
+  const status = candidate.status === "running" ? "paused" : candidate.status;
+  return {
+    snake,
+    direction: candidate.direction,
+    targets,
+    progress,
+    score: Number.isFinite(candidate.score) ? Math.max(0, Math.round(candidate.score ?? 0)) : 0,
+    strikes: Number.isFinite(candidate.strikes) ? clamp(Math.round(candidate.strikes ?? 0), 0, SNAKE_MAX_STRIKES) : 0,
+    status
+  };
+}
+
+function isValidSnakeCell(value: unknown, boardSize: number): value is SnakeCell {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const cell = value as Partial<SnakeCell>;
+  const x = cell.x;
+  const y = cell.y;
+  return (
+    Number.isInteger(x) &&
+    Number.isInteger(y) &&
+    x !== undefined &&
+    y !== undefined &&
+    x >= 0 &&
+    x < boardSize &&
+    y >= 0 &&
+    y < boardSize
+  );
+}
+
+function isSnakeDirection(value: unknown): value is SnakeDirection {
+  return value === "up" || value === "right" || value === "down" || value === "left";
+}
+
+function isSnakeStatus(value: unknown): value is SnakeStatus {
+  return value === "ready" || value === "running" || value === "paused" || value === "won" || value === "lost";
 }
 
 function getSnakeBoardSize(word: string) {
@@ -3690,11 +4525,20 @@ function ObjectControl({
         </div>
         {object.shapeAsset ? (
           <div className="flex items-center gap-2 rounded-lg border border-input p-2">
-            <img
-              src={object.shapeAsset.dataUrl}
-              alt=""
-              className="size-10 shrink-0 rounded-md bg-muted object-contain"
-            />
+            {object.shapeAsset.spriteSheet?.frames ? (
+              <AvatarSprite
+                asset={object.shapeAsset}
+                manifest={object.shapeAsset.spriteSheet}
+                expression="happy"
+                className="size-10 shrink-0"
+              />
+            ) : (
+              <img
+                src={object.shapeAsset.dataUrl}
+                alt=""
+                className="size-10 shrink-0 rounded-md bg-muted object-contain"
+              />
+            )}
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{object.shapeAsset.name}</div>
               <Badge variant="secondary">{object.shapeAsset.mimeType === "image/gif" ? "GIF" : "PNG"}</Badge>
@@ -3792,12 +4636,28 @@ function useLiveSpriteSheetAsset() {
 
   useEffect(() => {
     let cancelled = false;
+    let spriteSheetConfig: SpriteSheetConfig | undefined;
+
+    async function loadSpriteSheetConfig() {
+      if (spriteSheetConfig) {
+        return spriteSheetConfig;
+      }
+      const response = await fetch(SPRITE_TEMPLATE_MANIFEST_PATH, { cache: "no-store" });
+      if (!response.ok) {
+        return undefined;
+      }
+      spriteSheetConfig = spriteSheetConfigFromManifest(await response.json());
+      return spriteSheetConfig;
+    }
 
     async function checkForPreviewUpdate() {
       try {
-        const response = await fetch(LIVE_SPRITE_SHEET_PREVIEW_PATH, { method: "HEAD", cache: "no-store" });
+        const [response, liveSpriteSheetConfig] = await Promise.all([
+          fetch(LIVE_SPRITE_SHEET_PREVIEW_PATH, { method: "HEAD", cache: "no-store" }),
+          loadSpriteSheetConfig()
+        ]);
         const contentType = response.headers.get("content-type") ?? "";
-        if (!response.ok || !contentType.startsWith("image/")) {
+        if (!response.ok || !contentType.startsWith("image/") || !liveSpriteSheetConfig) {
           if (!cancelled) {
             setAsset(null);
           }
@@ -3816,8 +4676,9 @@ function useLiveSpriteSheetAsset() {
             : {
                 dataUrl: `${LIVE_SPRITE_SHEET_PATH}?v=${cacheKey}`,
                 previewUrl: `${LIVE_SPRITE_SHEET_PREVIEW_PATH}?v=${cacheKey}`,
-                name: "Live ImageGen avatar sprite sheet",
+                name: "Live local ImageGen avatar sprite sheet",
                 mimeType: "image/png",
+                spriteSheet: liveSpriteSheetConfig,
                 version
               });
         }
@@ -3839,10 +4700,62 @@ function useLiveSpriteSheetAsset() {
   return asset;
 }
 
+function spriteSheetConfigFromManifest(value: unknown): SpriteSheetConfig | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const candidate = value as {
+    canvas?: { width?: number; height?: number };
+    grid?: {
+      columns?: number;
+      rows?: number;
+      circles?: Array<{ emotion?: string; x?: number; y?: number; diameter?: number }>;
+    };
+  };
+  const circles = candidate.grid?.circles;
+  if (!Array.isArray(circles) || typeof candidate.canvas?.width !== "number" || typeof candidate.canvas?.height !== "number") {
+    return undefined;
+  }
+  const frames: NonNullable<SpriteSheetConfig["frames"]> = {};
+  for (const circle of circles) {
+    const emotion = circle.emotion as SpriteEmotion;
+    if (
+      !SPRITE_EMOTION_ORDER.includes(emotion)
+      || frames[emotion]
+      || typeof circle.x !== "number"
+      || typeof circle.y !== "number"
+      || typeof circle.diameter !== "number"
+    ) {
+      continue;
+    }
+    frames[emotion] = {
+      x: circle.x,
+      y: circle.y,
+      width: circle.diameter,
+      height: circle.diameter
+    };
+  }
+  if (Object.keys(frames).length !== SPRITE_EMOTION_ORDER.length) {
+    return undefined;
+  }
+  return {
+    columns: candidate.grid?.columns ?? 3,
+    rows: candidate.grid?.rows ?? 4,
+    imageWidth: candidate.canvas.width,
+    imageHeight: candidate.canvas.height,
+    frames
+  };
+}
+
 function getSpriteSheetPreviewStyle(asset: ObjectShapeAsset | null): CSSProperties | undefined {
   if (!asset?.spriteSheet) {
     return {
       aspectRatio: FIXED_AVATAR_SHEET_ASPECT_RATIO
+    };
+  }
+  if (asset.spriteSheet.imageWidth && asset.spriteSheet.imageHeight) {
+    return {
+      aspectRatio: `${asset.spriteSheet.imageWidth} / ${asset.spriteSheet.imageHeight}`
     };
   }
   const frameWidth = asset.spriteSheet.frameWidth ?? asset.spriteSheet.frameSize ?? 1;

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .sprite_sheet import EMOTIONS
+from .sprite_sheet import EMOTIONS, FRAME_COLUMNS, FRAME_ROWS
 
 
 def write_metadata(
@@ -15,16 +15,21 @@ def write_metadata(
     detection_method: str,
     validation: dict,
 ) -> None:
+    frame_ids = [f"{name}_{variation_index:02d}" for name, variations in EMOTIONS for variation_index in range(1, len(variations) + 1)]
     payload = {
         "source_image": str(source_image),
         "face_index": face_index,
         "detected_face_bbox": list(detected_face_bbox),
         "detection_method": detection_method,
         "frame_size": frame_size,
-        "rows": 6,
-        "columns": 2,
-        "emotions": [{"name": name, "frames": 2} for name, _variations in EMOTIONS],
-        "layout": [[f"{name}_01", f"{name}_02"] for name, _variations in EMOTIONS],
+        "rows": FRAME_ROWS,
+        "columns": FRAME_COLUMNS,
+        "stickers": frame_ids,
+        "emotions": [{"name": name, "frames": len(variations)} for name, variations in EMOTIONS],
+        "layout": [
+            frame_ids[row * FRAME_COLUMNS : (row + 1) * FRAME_COLUMNS]
+            for row in range(FRAME_ROWS)
+        ],
         "style": {
             "outer_shape": "perfect_circle",
             "identity_preservation": True,

@@ -23,7 +23,7 @@ def load_image(path: Path) -> Image.Image:
     return image.convert("RGBA")
 
 
-def expand_bbox(bbox: tuple[int, int, int, int], image_size: tuple[int, int], scale: float = 1.85) -> tuple[int, int, int, int]:
+def expand_bbox(bbox: tuple[int, int, int, int], image_size: tuple[int, int], scale: float = 2.65) -> tuple[int, int, int, int]:
     x, y, width, height = bbox
     center_x = x + width / 2
     center_y = y + height / 2
