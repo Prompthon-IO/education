@@ -1,0 +1,271 @@
+{
+  "canvas": {
+    "width": 1200,
+    "height": 2100,
+    "ratio": "4:7",
+    "print_size_inches": [
+      4,
+      7
+    ]
+  },
+  "header": {
+    "x": 0,
+    "y": 0,
+    "width": 1200,
+    "height": 340,
+    "logos": {
+      "fira": {
+        "x": 620,
+        "y": 58,
+        "width": 520,
+        "height": 85
+      },
+      "prompthon": {
+        "x": 620,
+        "y": 201,
+        "width": 520,
+        "height": 44
+      },
+      "discord_qr": {
+        "x": 340,
+        "y": 52,
+        "width": 220,
+        "height": 220,
+        "frame_bounds": {
+          "x": 324,
+          "y": 36,
+          "width": 252,
+          "height": 252,
+          "corner_radius": 26,
+          "padding": 16
+        }
+      },
+      "source_portrait": {
+        "x": 58,
+        "y": 52,
+        "width": 220,
+        "height": 220,
+        "corner_radius": 27,
+        "frame_bounds": {
+          "x": 42,
+          "y": 36,
+          "width": 252,
+          "height": 252,
+          "corner_radius": 26,
+          "padding": 16
+        },
+        "placeholder": true
+      }
+    }
+  },
+  "grid": {
+    "columns": 3,
+    "rows": 4,
+    "circle_diameter": 310,
+    "row_gap": 80,
+    "emotions": [
+      "happy",
+      "excited",
+      "sad",
+      "dizzy",
+      "playful",
+      "sleepy"
+    ],
+    "stickers": [
+      "happy_01",
+      "happy_02",
+      "excited_01",
+      "excited_02",
+      "sad_01",
+      "sad_02",
+      "dizzy_01",
+      "dizzy_02",
+      "playful_01",
+      "playful_02",
+      "sleepy_01",
+      "sleepy_02"
+    ],
+    "circles": [
+      {
+        "slot": "r1c1",
+        "sticker": "happy_01",
+        "emotion": "happy",
+        "variation": 1,
+        "row": 1,
+        "column": 1,
+        "x": 70,
+        "y": 360,
+        "diameter": 310,
+        "center": [
+          225.0,
+          515.0
+        ]
+      },
+      {
+        "slot": "r1c2",
+        "sticker": "happy_02",
+        "emotion": "happy",
+        "variation": 2,
+        "row": 1,
+        "column": 2,
+        "x": 445,
+        "y": 360,
+        "diameter": 310,
+        "center": [
+          600.0,
+          515.0
+        ]
+      },
+      {
+        "slot": "r1c3",
+        "sticker": "excited_01",
+        "emotion": "excited",
+        "variation": 1,
+        "row": 1,
+        "column": 3,
+        "x": 820,
+        "y": 360,
+        "diameter": 310,
+        "center": [
+          975.0,
+          515.0
+        ]
+      },
+      {
+        "slot": "r2c1",
+        "sticker": "excited_02",
+        "emotion": "excited",
+        "variation": 2,
+        "row": 2,
+        "column": 1,
+        "x": 70,
+        "y": 750,
+        "diameter": 310,
+        "center": [
+          225.0,
+          905.0
+        ]
+      },
+      {
+        "slot": "r2c2",
+        "sticker": "sad_01",
+        "emotion": "sad",
+        "variation": 1,
+        "row": 2,
+        "column": 2,
+        "x": 445,
+        "y": 750,
+        "diameter": 310,
+        "center": [
+          600.0,
+          905.0
+        ]
+      },
+      {
+        "slot": "r2c3",
+        "sticker": "sad_02",
+        "emotion": "sad",
+        "variation": 2,
+        "row": 2,
+        "column": 3,
+        "x": 820,
+        "y": 750,
+        "diameter": 310,
+        "center": [
+          975.0,
+          905.0
+        ]
+      },
+      {
+        "slot": "r3c1",
+        "sticker": "dizzy_01",
+        "emotion": "dizzy",
+        "variation": 1,
+        "row": 3,
+        "column": 1,
+        "x": 70,
+        "y": 1140,
+        "diameter": 310,
+        "center": [
+          225.0,
+          1295.0
+        ]
+      },
+      {
+        "slot": "r3c2",
+        "sticker": "dizzy_02",
+        "emotion": "dizzy",
+        "variation": 2,
+        "row": 3,
+        "column": 2,
+        "x": 445,
+        "y": 1140,
+        "diameter": 310,
+        "center": [
+          600.0,
+          1295.0
+        ]
+      },
+      {
+        "slot": "r3c3",
+        "sticker": "playful_01",
+        "emotion": "playful",
+        "variation": 1,
+        "row": 3,
+        "column": 3,
+        "x": 820,
+        "y": 1140,
+        "diameter": 310,
+        "center": [
+          975.0,
+          1295.0
+        ]
+      },
+      {
+        "slot": "r4c1",
+        "sticker": "playful_02",
+        "emotion": "playful",
+        "variation": 2,
+        "row": 4,
+        "column": 1,
+        "x": 70,
+        "y": 1530,
+        "diameter": 310,
+        "center": [
+          225.0,
+          1685.0
+        ]
+      },
+      {
+        "slot": "r4c2",
+        "sticker": "sleepy_01",
+        "emotion": "sleepy",
+        "variation": 1,
+        "row": 4,
+        "column": 2,
+        "x": 445,
+        "y": 1530,
+        "diameter": 310,
+        "center": [
+          600.0,
+          1685.0
+        ]
+      },
+      {
+        "slot": "r4c3",
+        "sticker": "sleepy_02",
+        "emotion": "sleepy",
+        "variation": 2,
+        "row": 4,
+        "column": 3,
+        "x": 820,
+        "y": 1530,
+        "diameter": 310,
+        "center": [
+          975.0,
+          1685.0
+        ]
+      }
+    ]
+  }
+}

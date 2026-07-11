@@ -68,6 +68,10 @@ export function collide1D({
   return { velocityA: velocityAAfter, velocityB: velocityBAfter };
 }
 
+export function collideWithStatic1D(velocity: number, restitution: number): number {
+  return -velocity * restitution;
+}
+
 export function collide2D({
   objectA,
   objectB,
@@ -98,6 +102,19 @@ export function collide2D({
   return {
     velocityA: add(scale(normal, resolved.velocityA), scale(tangent, tangentA)),
     velocityB: add(scale(normal, resolved.velocityB), scale(tangent, tangentB))
+  };
+}
+
+export function reflectVelocity(
+  velocity: Vector,
+  normal: Vector,
+  restitution: number
+): Vector {
+  const unitNormal = normalize(normal);
+  const normalSpeed = dot(velocity, unitNormal);
+  return {
+    x: velocity.x - (1 + restitution) * normalSpeed * unitNormal.x,
+    y: velocity.y - (1 + restitution) * normalSpeed * unitNormal.y
   };
 }
 

@@ -1,0 +1,61 @@
+{
+  "id": "collision-lab",
+  "name": "Collision Lab",
+  "subtitle": "Momentum, energy, and bounce behavior in one live model.",
+  "showcaseLabel": "Student showcase: Maya Chen",
+  "tip": "Tip: compare momentum before and after each collision.",
+  "theme": {
+    "objectA": "#ff5a00",
+    "objectB": "#07111f",
+    "ink": "#07111f",
+    "grid": "rgba(7, 17, 31, 0.08)",
+    "border": "#07111f",
+    "wall": "#ffb000"
+  },
+  "objectPalette": ["#ff5a00", "#07111f", "#2563eb", "#10a37f", "#ffb000", "#c2410c"],
+  "simulation": {
+    "objectRadiusMultiplier": 2
+  },
+  "objects": [
+    {
+      "id": "A",
+      "name": "Object A",
+      "color": "#ff5a00",
+      "mass": 2,
+      "speed": 2.4,
+      "angle": 0,
+      "material": "rubber",
+      "isStatic": false,
+      "shapeAsset": {
+        "targetFile": "object-animations/object-a-emotion-sprite.png",
+        "name": "Object A emotion sprite",
+        "mimeType": "image/png",
+        "spriteSheet": {
+          "columns": 2,
+          "rows": 6,
+          "frameSize": 512
+        }
+      }
+    },
+    {
+      "id": "B",
+      "name": "Object B",
+      "color": "#07111f",
+      "mass": 2,
+      "speed": -1.6,
+      "angle": 180,
+      "material": "steel",
+      "isStatic": false,
+      "shapeAsset": {
+        "targetFile": "object-animations/object-b-emotion-sprite.png",
+        "name": "Object B emotion sprite",
+        "mimeType": "image/png",
+        "spriteSheet": {
+          "columns": 2,
+          "rows": 6,
+          "frameSize": 512
+        }
+      }
+    }
+  ]
+}

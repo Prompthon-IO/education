@@ -1,11 +1,13 @@
 import { describe, expect, test } from "vitest";
 import {
   collide1D,
+  collideWithStatic1D,
   collide2D,
   kineticEnergy,
   materialRestitution,
   momentum1D,
   playbackDeltaSeconds,
+  reflectVelocity,
   vectorAngleDegrees,
   wallBounce
 } from "./physics";
@@ -49,6 +51,11 @@ describe("collide1D", () => {
       momentum1D(3, result.velocityA) + momentum1D(2, result.velocityB)
     );
   });
+
+  test("static collision reverses moving velocity by restitution", () => {
+    expect(collideWithStatic1D(5, 0.8)).toBeCloseTo(-4);
+    expect(collideWithStatic1D(-3, 0.5)).toBeCloseTo(1.5);
+  });
 });
 
 describe("collide2D", () => {
@@ -71,6 +78,17 @@ describe("collide2D", () => {
     expect(result.velocityB.x).toBeCloseTo(3);
     expect(result.velocityA.y).toBeCloseTo(1);
     expect(result.velocityB.y).toBeCloseTo(4);
+  });
+
+  test("reflects velocity across a static object normal", () => {
+    const result = reflectVelocity(
+      { x: 4, y: 2 },
+      { x: 1, y: 0 },
+      0.5
+    );
+
+    expect(result.x).toBeCloseTo(-2);
+    expect(result.y).toBeCloseTo(2);
   });
 });
 
