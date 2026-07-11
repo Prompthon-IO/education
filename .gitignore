@@ -3,6 +3,9 @@ dist
 .DS_Store
 *.local
 coverage
+.playwright-cli/
+.playwright-mcp/
+test-results/
 tmp/
 output/
 __pycache__/
