@@ -1,0 +1,170 @@
+.electron-view {
+  padding: 18px 28px 8px;
+}
+.electron-view-heading {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.electron-view-heading strong {
+  font-size: 17px;
+}
+.electron-view-heading p {
+  font-size: 12px;
+  color: #7b9384;
+  margin-top: 6px;
+}
+.electron-view-heading label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #789080;
+}
+.electron-view-heading input {
+  accent-color: #4b8462;
+}
+.electron-focus {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.electron-focus button {
+  padding: 8px 14px;
+  border: 1px solid #dde7df;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.electron-focus button[aria-pressed="true"] {
+  background: #386d51;
+  color: white;
+  border-color: #386d51;
+}
+.electron-canvas {
+  width: 100%;
+  display: block;
+  max-height: 460px;
+}
+.electron-canvas [role="button"] {
+  cursor: pointer;
+}
+.electron-canvas [role="button"]:focus-visible {
+  outline: 2px solid #dcaa46;
+}
+.electron-ledger {
+  background: #edf5ef;
+  border: 1px solid #dce9dc;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+}
+.electron-ledger strong {
+  font-size: 17px;
+  color: #3e7455;
+}
+.electron-ledger span {
+  font-size: 12px;
+  color: #66816e;
+}
+.electron-ledger p {
+  width: 100%;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #69816e;
+}
+.electron-key {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 0;
+  font-size: 11px;
+  color: #829487;
+}
+.electron-key span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.electron-key i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.electron-key small {
+  font-size: 10px;
+}
+.electron-why {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 10px;
+}
+.electron-why article {
+  padding: 16px;
+  background: #f7f8f3;
+  border-radius: 9px;
+}
+.electron-why b {
+  font-size: 13px;
+  color: #54745b;
+}
+.electron-why p {
+  font-size: 12px;
+  color: #7a897c;
+  line-height: 1.85;
+  margin-top: 8px;
+}
+.reaction-case-picker {
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 850px) {
+  .reaction-case-picker {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .electron-why {
+    grid-template-columns: 1fr;
+  }
+  .electron-view {
+    padding: 16px 12px;
+  }
+  .electron-canvas {
+    min-height: 240px;
+  }
+  .electron-canvas text {
+    font-size: 16px;
+  }
+  .electron-ledger {
+    padding: 14px;
+  }
+  .electron-view-heading strong {
+    font-size: 15px;
+  }
+}
+@media (max-width: 600px) {
+  .reaction-case-picker {
+    grid-template-columns: 1fr;
+  }
+}
+.electron-playback {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fffefa;
+  border-block: 1px solid #e2ebe4;
+}
+.electron-playback .reaction-player {
+  padding-top: 12px;
+}
+.electron-playback .reaction-chapters button {
+  padding-block: 10px;
+}
+.chem-app .electron-playback input.reaction-timeline {
+  margin-bottom: 12px;
+}

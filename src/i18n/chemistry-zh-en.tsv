@@ -1,0 +1,654 @@
+全部	All
+化学探索室	Chemistry Lab
+探索 · 拆解 · 发现	Explore · Take apart · Discover
+把看不见的化学，转到眼前。	Bring invisible chemistry into view.
+从一颗原子开始，亲手探索分子的立体世界。	Start with an atom and explore molecules in three dimensions.
+实验模式	Lab modes
+蛋白质拆解	Protein Explorer
+反应动画	Reaction Animations
+3D 分子工坊	3D Molecule Workshop
+酸碱实验台	Acid–Base Lab
+分子分类	Molecule categories
+无机	Inorganic
+有机	Organic
+全部分子	All molecules
+化学	chemistry
+6 个分子 · 真实空间坐标	6 molecules · 3D coordinates
+重置模型	Reset model
+三维分子，可拖动旋转，点击原子或化学键	3D molecule: drag to rotate; select an atom or bond
+化学键	Bond
+双键	Double bond
+已拆开	Separated
+原子	Atom
+拖动旋转 · 点原子或化学键看细节	Drag to rotate · Select an atom or bond for details
+放大	Zoom
+模型缩放	Model zoom
+展开结构	Spread structure
+旋转 45°	Rotate 45°
+01 / 看懂空间	01 / Explore the shape
+键角为典型近似值；球棍模型以教学为目的，原子大小不按实际比例。乙醇展示一种近似构象，未显示孤电子对。	Bond angles are typical approximations. This teaching model does not show atoms to scale. Ethanol shows one approximate conformation; lone pairs are omitted.
+02 / 动手拆解	02 / Take it apart
+单键	Single bond
+共用	Sharing
+对电子 · 典型键长	 electron pair(s) · Typical bond length
+重新连接这条键	Reconnect this bond
+拆开这条键	Separate this bond
+原子 ·	atom ·
+当前模型中连接了	Connected atoms in this model:
+个原子。点旁边的化学键，就能观察和拆解它。	. Select a nearby bond to inspect and separate it.
+每一条键，都有故事。	Every bond has a story.
+点选模型中的连接杆，查看键的类型、键长和共用电子对，再试着拆开它。	Select a connecting rod to see its bond type, length and shared electron pairs. Then try separating it.
+条键。虚线表示原来的连接位置。	 bond(s). Dashed lines mark their original connections.
+拆开后以虚线标记，随时可以重新连接。	Separated bonds appear as dashed lines. You can reconnect them at any time.
+这是结构演示；真实断键需要能量，产物和形状也可能变化。	This is a structural demonstration. Breaking real bonds requires energy, and the products and shapes may change.
+小小科学家挑战	Young scientist challenge
+收起解释	Hide explanation
+看看解释	Show explanation
+INORGANIC / 无机化学	INORGANIC CHEMISTRY
+酸与碱，什么时候刚刚好？	When do acid and base balance?
+烧杯中有 20 mL、0.1 mol/L 的盐酸。拖动滑块，加入同浓度的氢氧化钠溶液。	The beaker contains 20 mL of 0.1 mol/L hydrochloric acid. Move the slider to add sodium hydroxide solution of the same concentration.
+加入 NaOH：	NaOH added:
+加入氢氧化钠体积	Volume of sodium hydroxide added
+净离子反应：H⁺ + OH⁻ → H₂O	Net ionic reaction: H⁺ + OH⁻ → H₂O
+重新实验	Restart experiment
+25 °C 理想强酸强碱模型，忽略活度和体积收缩。颜色仅用于区分酸碱性，并非溶液实际颜色。	An ideal strong acid–strong base model at 25 °C, ignoring activity and volume contraction. Colors indicate acidity or basicity, not the solution's actual color.
+恰好中和 · 中性	Neutralized · Neutral
+酸过量 · 酸性	Excess acid · Acidic
+碱过量 · 碱性	Excess base · Basic
+两边的物质的量相等，H⁺ 与 OH⁻ 恰好反应。	Equal amounts of H⁺ and OH⁻ react completely.
+试着找到 pH = 7 的位置。	Try to find pH = 7.
+停止旋转	Stop rotating
+自动旋转	Auto rotate
+转 45°	Turn 45°
+缩放	Zoom
+重置视角	Reset view
+序列第	Sequence position
+第	Position
+位	:
+真实折叠结构	Experimental fold
+展开链（存在二硫键时先还原）	Unfold the chain (reduce disulfides if present)
+逐条水解肽键	Hydrolyze peptide bonds
+个独立氨基酸	 separate amino acids
+个残基	 residues
+真实结构来自 RCSB PDB	Experimental structure from RCSB PDB
+· 当前展示范围见上方说明	· See the scope of this model above
+拖动旋转 · 点击拆解后的氨基酸	Drag to rotate · Select an amino acid after separation
+01 原始折叠结构	01 Original fold
+02 展开链	02 Unfold chain
+03 拆成氨基酸	03 Separate amino acids
+暂停	Pause
+播放拆解	Play breakdown
+全部拆开	Separate all
+重新观察	Start again
+拆解进度	Breakdown progress
+蛋白质拆解进度	Protein breakdown progress
+字母标记	Letter labels
+蛋白质三维模型	3D protein model
+每颗球 = 一个氨基酸残基（位于 α 碳处）· 实线 = 相邻残基的主链连接 · 金色虚线 = 二硫键位置示意	Each sphere represents a residue at its α carbon. Solid lines connect the backbone; gold dashed lines indicate disulfide positions.
+剩余肽键	Peptide bonds left
+剩余二硫键	Disulfides left
+主链片段	Backbone fragments
+已水解肽键 / H₂O	Hydrolyzed bonds / H₂O
+上一个氨基酸	Previous amino acid
+下一个氨基酸	Next amino acid
+游离氨基酸示意	Free amino acid model
+链内残基局部结构	Residue within the chain
+所选氨基酸三维结构	Selected amino acid in 3D
+水解后补入的端基氧	Terminal oxygen added after hydrolysis
+碳	Carbon
+氮	Nitrogen
+氧	Oxygen
+硫	Sulfur
+氢	Hydrogen
+游离氨基酸分子式：	Free amino acid formula:
+· α 碳：连接主链和侧链的中心	· α carbon: connects the backbone and side chain
+· 主链氮	· Backbone nitrogen
+· 主链羧基碳	· Backbone carboxyl carbon
+· 末端羧基氧	· Terminal carboxyl oxygen
+· 主链羰基氧	· Backbone carbonyl oxygen
+· 侧链原子	· Side-chain atom
+点击一个原子，查看它在氨基酸中的位置。	Select an atom to explore its role in the amino acid.
+绿色虚线边框表示教学模型补入的端基氧；其坐标为近似构建，不是原始晶体数据。自由端基可写作 —NH₃⁺ / —COO⁻（脯氨酸氮端为 —NH₂⁺），实际电荷随 pH 变化。	A green dashed outline marks an added terminal oxygen. Its position is approximate, not part of the experimental crystal data. Free end groups can be written as —NH₃⁺ / —COO⁻ (—NH₂⁺ for proline); actual charges depend on pH.
+局部模型来自蛋白质中的残基，端基尚未补全，不能当作独立的游离氨基酸。	This local model shows a residue within a protein. Its end groups are incomplete, so it is not an isolated free amino acid.
+仅显示实验记录中的标准残基和已解析重原子；缺失的侧链原子未补建。为方便观察，未画氢原子，连线未区分键级。拆解后保留原侧链构象，不模拟溶液中的构象变化。	Only standard residues and resolved heavy atoms are shown. Missing side-chain atoms are not rebuilt. Hydrogen atoms and bond orders are omitted. Separated residues keep their original side-chain shapes; changes in solution are not simulated.
+点序列，也能找到每一个氨基酸	Select an amino acid in the sequence
+N 端 → C 端 ·	N terminus → C terminus ·
+拆开，发生了什么？	What happens during breakdown?
+当前模型包含	This model contains
+个残基、	 residues,
+条已建模肽键和	 modeled peptide bonds and
+条二硫键。完全水解这些肽键消耗	 disulfide bonds. Complete hydrolysis of these peptide bonds consumes
+个水分子；二硫键另需还原。计数只针对显示的链或结构域，不代表完整生物学组装体。	 water molecules; disulfides require separate reduction. Counts refer only to the displayed chain or domain, not the complete biological assembly.
+这是可观察的教学拆解	A breakdown model for learning
+完整状态采用真实 α 碳坐标；展开和分散是便于观察的排布动画。还原、水解和时间进度都是示意，不能靠普通加热或鼠标点击实现。重置是回看模型，不代表真实反应可直接逆转。	The folded state uses experimental α-carbon coordinates. Unfolding and spreading are illustrative layouts. Reduction, hydrolysis and timing are schematic, not processes achieved by ordinary heating or clicking. Resetting replays the model; it does not imply a reversible chemical reaction.
+结构来源：RCSB PDB ·	Structure source: RCSB PDB ·
+探索蛋白质的形状	Explore protein shapes
+从种子到肌肉，从细菌到人体。选一个真实结构，转一转，再拆开看看。	From seeds to muscles, from bacteria to humans. Choose a real structure, rotate it, then take it apart.
+收起结构库	Hide library
+浏览全部 20 种蛋白质	Browse all 20 proteins
+蛋白质结构库	Protein structure library
+查找蛋白质	Find a protein
+名字、出现位置或 PDB 编号…	Name, location or PDB ID…
+查看	Explore
+残基 ·	residues ·
+没有匹配的蛋白质，试试“肌肉”或“酶”。	No matching proteins. Try “muscle” or “enzyme”.
+当前蛋白质介绍	About this protein
+在哪里出现	Where it is found
+结构来源生物	Source organism
+当前展示范围	Scope of this model
+链	Chain
+个已建模残基	 modeled residues
+实验与来源	Experiment and source
+结构加载失败。	Could not load the structure.
+重试	Retry
+正在加载真实结构…	Loading experimental structure…
+再看一次	Watch again
+播放动画	Play animation
+重置动画	Reset animation
+下一步	Next step
+速度	Speed
+动画速度	Animation speed
+动画进度百分比	Animation progress percentage
+反应动画进度	Reaction animation progress
+动画案例	Animation examples
+WATCH THE CHANGE / 看见变化	WATCH THE CHANGE
+反应方程式或过程示意	Reaction equation or process diagram
+反应物 · 2H₂ + O₂	Reactants · 2H₂ + O₂
+折叠 → 展开	Folded → Unfolded
+完整肽链 + 水	Intact peptide chain + Water
+产物 · 2H₂O	Products · 2H₂O
+展开 → 聚集	Unfolded → Aggregated
+两条较短的链	Two shorter chains
+四个氢 + 两个氧，全程守恒 · 小编号帮你追踪同一颗原子	Four hydrogens + two oxygens, conserved throughout · Numbers track each atom
+三条蛋白质链 · 实线：肽链骨架保持完整 · 虚线：链间相互作用	Three protein chains · Solid: intact peptide backbone · Dashed: interactions between chains
+一颗珠子 = 一个氨基酸残基 · 只演示一个肽键的水解	One bead = one amino acid residue · Hydrolysis of one peptide bond
+拖动模型，换个角度观察	Drag the model to change your view
+共用电子，不会复制电子	Sharing electrons does not duplicate them
+展开 ≠ 剪断	Unfolding ≠ Cutting
+水解 ≠ 仅仅加热	Hydrolysis ≠ Simply heating
+连接改变，原子守恒	Bonds change; atoms are conserved
+延伸阅读：Western Oregon University · Electron Sharing ↗	Read more: Western Oregon University · Electron Sharing ↗
+延伸阅读：Exploratorium · 肉的科学 ↗	Read more: Exploratorium · The Science of Meat ↗
+独立的外层电子	Distinct outer electrons
+计入氧外层的电子	Electrons counted around oxygen
+计入	Counted around
+左	left
+右	right
+侧氢的电子	 hydrogen
+水分子外层电子动画	Water valence-electron animation
+成键放大镜 · 每一个电子都看得见	Bonding close-up · See every electron
+点选原子，跟着高亮小点数一数。	Select an atom and count the highlighted dots.
+显示氧的内层 2 个电子	Show oxygen's 2 inner electrons
+选择电子计数对象	Choose an atom for electron counting
+全部外层电子	All outer electrons
+左侧 H	Left H
+氧 O	Oxygen O
+右侧 H	Right H
+两个氢分别共用一对电子，氧周围八个电子	Each hydrogen shares a pair; eight electrons are counted around oxygen
+氢各有一个电子，氧外层六个电子，观察共用过程	Each hydrogen has one electron; oxygen has six outer electrons. Watch them share.
+同一对共用电子，同时计入两侧原子	A shared pair counts around both atoms
+电子逐渐形成共用对 · 不代表真实运动轨迹	Electrons form shared pairs · Paths are illustrative
+起点：分开画的原子 · 用来解释成键计数	Start: separate atoms · A bonding-counting model
+选择	Select
+H：正在共用…	H: Sharing…
+选择氧的外层电子	Select oxygen's outer electrons
+O：8 / 8 ✓（4 个独有 + 4 个共用）	O: 8 / 8 ✓ (4 unshared + 4 shared)
+O：正在形成两对共用电子…	O: Forming two shared pairs…
+O：外层 6 / 8，内层已有 2	O: Outer 6 / 8; inner 2
+圆圈表示电子层的计数范围，不是电子运行轨道；水的实际分子形状为折线形。	Circles show electron-counting regions, not electron paths. The actual water molecule is bent.
+形成中	Forming
+实际总数始终为 10：8 个外层电子 + 2 个氧内层电子	The actual total stays at 10: 8 outer electrons + oxygen's 2 inner electrons
+8 + 2 + 2 不能当成实际总数：共用电子在两个原子周围各数一次，没有复制，也没有变多。	8 + 2 + 2 is not the actual total: shared electrons count around both atoms. No electrons are duplicated or added.
+氧贡献 6 个外层电子，每个氢贡献 1 个。播放动画，看看它们怎样组成两对共用电子。	Oxygen contributes 6 outer electrons and each hydrogen contributes 1. Play to see them form two shared pairs.
+来自氧的电子	Electron from oxygen
+来自氢的电子	Electron from hydrogen
+氧的内层电子	Oxygen's inner electrons
+颜色只帮助追踪来源，所有电子本质相同。	Colors track origins only; all electrons are fundamentally identical.
+为什么是 2？	Why 2?
+氢只涉及第一层的 1s 轨道，它最多容纳 2 个电子。共用一对电子后，氢满足二电子规则（duet）。	Hydrogen uses the first shell's 1s orbital, which holds at most 2 electrons. Sharing a pair satisfies the duet rule.
+为什么常见的是 8？	Why is 8 common?
+氧的第二层有 1 个 s 轨道和 3 个 p 轨道，每个最多容纳 2 个电子：4 × 2 = 8。这对应八电子规则（octet）。	Oxygen's second shell has one s orbital and three p orbitals. Each holds at most 2 electrons: 4 × 2 = 8. This is the octet rule.
+“稳定”是什么意思？	What does “stable” mean?
+成键后的体系可以比相应的分离原子能量更低。2 和 8 是有用的电子计数规律，不是所有反应的唯一原因，也不是“永不反应”。	A bonded system can have lower energy than the corresponding separated atoms. The duet and octet are useful counting rules, not the sole cause of reactions or a promise of never reacting.
+约	About
+水	Water
+折线形	Bent
+氧原子上的两对孤电子对会影响键的方向，所以水分子像一个弯弯的 V，而不是一条直线。	Oxygen's two lone pairs influence bond directions, so water forms a bent V rather than a straight line.
+水分子的三个原子在一条直线上吗？	Are water's three atoms in a straight line?
+不在。H—O—H 键角约为 104.5°，水是折线形分子。	No. The H—O—H angle is about 104.5°, giving water a bent shape.
+二氧化碳	Carbon dioxide
+直线形	Linear
+碳原子与两个氧原子分别形成双键。虽然含碳，二氧化碳通常归入无机化合物。	Carbon forms a double bond with each oxygen. Although it contains carbon, carbon dioxide is usually classified as inorganic.
+图中的两组双键，一共表示几对共用电子？	How many shared electron pairs do these two double bonds represent?
+四对。每个双键表示两对共用电子。	Four pairs. Each double bond represents two shared pairs.
+氨	Ammonia
+三角锥形	Trigonal pyramidal
+三个氢原子形成三角形的底面，氮在上方。氮上的一对孤电子对让它与平面的三角形不同。	Three hydrogens form a triangular base with nitrogen above it. Nitrogen's lone pair helps give ammonia a pyramid shape rather than a flat triangle.
+从侧面看，氮和三个氢都在同一平面吗？	Viewed from the side, are nitrogen and all three hydrogens in one plane?
+不在。氨是三角锥形；旋转模型可以看出高度差。	No. Ammonia is trigonal pyramidal. Rotate the model to see the difference in height.
+甲烷	Methane
+正四面体	Tetrahedral
+四个氢朝向正四面体的四个顶点。转动它，看看为什么纸上的十字形画法不能完整表达真实结构。	The four hydrogens point toward the corners of a tetrahedron. Rotate it to see why a flat cross cannot fully represent its shape.
+四个氢原子是在一个平面上吗？	Are all four hydrogen atoms in one plane?
+不是。四条 C—H 键朝向空间中的四个不同方向，键角约为 109.5°。	No. The four C—H bonds point in different directions in space, with angles of about 109.5°.
+乙烯	Ethene
+平面结构	Planar
+两个碳以双键相连，六个原子基本共面。双键包含一个 σ 键和一个 π 键，不能像普通单键那样自由旋转。	The carbons share a double bond and all six atoms are approximately coplanar. A double bond has one σ bond and one π bond, which prevents free rotation like an ordinary single bond.
+双键是不是两根可以随意转动的绳子？	Is a double bond like two freely twisting ropes?
+不是。双键表示两对共用电子，π 键的成键方式限制了绕双键的旋转。	No. A double bond represents two shared pairs. The π bond restricts rotation around the double bond.
+乙醇	Ethanol
+碳周围近似四面体	Approximately tetrahedral around carbon
+碳周围约 109.5°	About 109.5° around carbon
+找到红色的氧与白色的氢：—OH 是羟基。分子中这个小小的官能团会影响它的性质。	Find the red oxygen and white hydrogen: —OH is a hydroxyl group. This small functional group influences the molecule's properties.
+乙醇中，哪两个原子组成了羟基 —OH？	Which two atoms form ethanol's hydroxyl group, —OH?
+氧原子和与它相连的氢原子。羟基是醇类的特征官能团。	Oxygen and its attached hydrogen. A hydroxyl group is the characteristic functional group of alcohols.
+电子为什么要成对？	Why do electrons pair up?
+外层电子 · 2 与 8	Outer electrons · 2 and 8
+氢各贡献 1 个 + 氧贡献 6 个 → 水中的 8 个外层电子	1 from each hydrogen + 6 from oxygen → 8 outer electrons in water
+共价键 · 电子计数示意	Covalent bonds · Electron-counting model
+认识外层电子	Meet the outer electrons
+靠近与共用	Approach and share
+形成电子对	Form electron pairs
+数一数：2 和 8	Count: 2 and 8
+先用分开的氢、氧原子解释电子计数：每个氢有 1 个电子，氧内层有 2 个、外层有 6 个。这不是氢气与氧气反应的实际起点。	Separate hydrogen and oxygen atoms explain the counting: each hydrogen has 1 electron; oxygen has 2 inner and 6 outer electrons. This is not the actual starting state of the hydrogen–oxygen reaction.
+氢与氧之间逐渐形成共用电子对。小点的移动是教学示意，不是电子的真实运动路径。	Shared pairs form between hydrogen and oxygen. Moving dots illustrate the concept, not actual electron paths.
+每条 O—H 共价键对应一对共用电子。氧还保留两对不参与这两条键的孤电子对。	Each O—H covalent bond corresponds to one shared pair. Oxygen also keeps two lone pairs outside these bonds.
+每个氢周围数到 2 个电子；氧外层数到 8 个，其中 4 个在两对共用电子里。整幅图实际只有 10 个电子，包括氧内层的 2 个。	Count 2 electrons around each hydrogen and 8 around oxygen, including 4 in shared pairs. There are only 10 electrons in total, including oxygen's 2 inner electrons.
+二电子和八电子规则是入门模型。氢气、氧气的 Lewis 结构本来就满足相应计数，生成水不能只用‘凑满’解释。真实反应取决于能量与反应条件；八电子规则也有例外。	The duet and octet rules are introductory models. The Lewis structures of hydrogen and oxygen molecules already satisfy their respective counts. Making water is not just about filling shells: energy and reaction conditions matter, and the octet rule has exceptions.
+水是怎样形成的？	How does water form?
+化学方程式	Chemical equation
+点燃 · 概念演示	Ignition · Concept demonstration
+反应物	Reactants
+旧键改变	Old bonds change
+原子重组	Atoms rearrange
+形成产物	Products form
+左侧是两个氢分子和一个氧分子。数一数：共有四个氢原子、两个氧原子。	On the left are two hydrogen molecules and one oxygen molecule: four hydrogen atoms and two oxygen atoms.
+输入能量启动反应。动画淡出旧键，帮助观察连接关系的变化。	Energy starts the reaction. Old bonds fade to show how connections change.
+跟着同一颗原子向右走：原子重新组合，没有凭空出现或消失。	Follow each atom to the right: atoms rearrange; none appear or disappear.
+右侧形成两个水分子。前后仍然是四个氢、两个氧，符合原子守恒。	Two water molecules form on the right. Four hydrogens and two oxygens remain: atoms are conserved.
+这是总反应的原子映射示意，不是实际逐步反应机理；没有表示自由原子中间体、反应速率或放热大小。	This maps atoms in the overall reaction, not the actual step-by-step mechanism. It does not depict free-atom intermediates, reaction rates or heat release.
+肉里的蛋白质受热	Heating proteins in meat
+厨房里的化学	Kitchen chemistry
+折叠的蛋白质 → 展开的蛋白质 → 聚集的蛋白质	Folded proteins → Unfolded proteins → Aggregated proteins
+加热 · 结构变化示意	Heating · Structural-change model
+原先折叠	Initially folded
+受热展开	Unfolding with heat
+彼此靠近	Moving together
+聚集成团	Clustering together
+把每条彩色长链想成一条折叠的珠子项链。每颗珠子代表一个氨基酸残基，不是单个原子。	Imagine each colored chain as a folded bead necklace. Each bead is an amino acid residue, not an atom.
+加热使维持折叠的部分相互作用改变，长链展开，这叫变性。连接珠子的肽链仍然完整。	Heat changes some interactions maintaining the fold. The chain unfolds: denaturation. The peptide backbone connecting the beads remains intact.
+展开的蛋白质链相互接近，暴露的区域之间形成新的相互作用。	Unfolded chains approach each other and new interactions form between exposed regions.
+多条蛋白质链聚集。肉的质地改变，肌肉纤维可收缩并排出部分水分。	Protein chains aggregate. Meat changes texture; muscle fibers may contract and release water.
+普通烹煮主要表现为变性和聚集，不等于把蛋白质直接分解成氨基酸。此处不模拟特定肉类的温度、时间、熟度或全部烹饪反应。	Ordinary cooking mainly causes denaturation and aggregation, not direct breakdown into amino acids. This model does not predict temperatures, cooking times, doneness or all cooking reactions.
+真正的断链是什么？	What actually breaks the chain?
+对比：肽键水解	Compare: peptide-bond hydrolysis
+合适的水解条件 · 示意	Suitable hydrolysis conditions · Model
+完整肽链	Intact peptide chain
+水参与反应	Water participates
+肽键断开	Peptide bond breaks
+得到较短的链	Shorter chains form
+这是一条简化的肽链。选择的连接处代表一个肽键，R 和 R′ 代表两侧其余部分。	This is a simplified peptide chain. The selected connection is a peptide bond; R and R′ represent the remaining parts on either side.
+在合适的酶催化或酸、碱等水解条件下，水参与肽键的断裂；不是仅靠普通烹煮。	Under suitable enzymatic, acidic or basic hydrolysis conditions, water participates in breaking a peptide bond. Ordinary cooking alone is not enough.
+一个肽键发生水解：水的 H 与 OH 分别成为新端基的一部分。	One peptide bond hydrolyzes: H and OH from water become parts of the new end groups.
+一条长链变成两条较短的链。继续水解多个肽键，才可能最终得到氨基酸。	One long chain becomes two shorter chains. Further hydrolysis of many peptide bonds can eventually yield amino acids.
+方程式采用简化的中性结构写法；实际端基的电荷随 pH 改变。图中珠子代表氨基酸残基，水用符号表示，不是原子级机理动画。	The equation uses simplified neutral structures; actual end-group charges depend on pH. Beads represent residues and water is symbolic. This is not an atom-level mechanism.
+丙氨酸	Alanine
+侧链是一个小小的甲基（—CH₃），属于非极性侧链。	Its small methyl side chain (—CH₃) is nonpolar.
+精氨酸	Arginine
+侧链含胍基，在接近中性的水溶液中通常带正电。	Its guanidino side chain is usually positively charged near neutral pH.
+天冬酰胺	Asparagine
+侧链含酰胺基，可以参与氢键。不要和天冬氨酸混淆。	Its amide side chain can form hydrogen bonds. Do not confuse it with aspartic acid.
+天冬氨酸	Aspartic acid
+侧链多一个羧基，在接近中性的水溶液中通常带负电。	Its extra carboxyl group is usually negatively charged near neutral pH.
+半胱氨酸	Cysteine
+侧链含硫醇基（—SH）。两个半胱氨酸残基可以形成一条二硫键（S—S），帮助固定蛋白质形状。	Its side chain has a thiol (—SH). Two cysteine residues can form a disulfide bond (S—S), helping stabilize a protein's shape.
+谷氨酰胺	Glutamine
+侧链含酰胺基，比天冬酰胺多一个 —CH₂—。	Its amide side chain has one more —CH₂— group than asparagine.
+谷氨酸	Glutamic acid
+侧链含羧基，在接近中性的水溶液中通常带负电。	Its carboxyl side chain is usually negatively charged near neutral pH.
+甘氨酸	Glycine
+侧链只是一个氢，是最小的常见氨基酸，也是这组常见氨基酸中唯一没有手性 α 碳的。	Its side chain is just hydrogen. It is the smallest common amino acid and the only one in this set without a chiral α carbon.
+组氨酸	Histidine
+侧链含咪唑环，可以参与质子转移。	Its imidazole ring can participate in proton transfer.
+异亮氨酸	Isoleucine
+侧链是支链烃，疏水；与亮氨酸分子式相同，但连接方式不同。	Its branched hydrocarbon side chain is hydrophobic. It has the same formula as leucine but different connectivity.
+亮氨酸	Leucine
+侧链是支链烃，常出现在蛋白质疏水区域。	Its branched hydrocarbon side chain often lies in hydrophobic protein regions.
+赖氨酸	Lysine
+侧链末端有氨基，在接近中性的水溶液中通常带正电。	The amino group at the end of its side chain is usually positively charged near neutral pH.
+甲硫氨酸	Methionine
+侧链含硫醚；与半胱氨酸的硫醇基不同。	Its side chain contains a thioether, unlike cysteine's thiol.
+苯丙氨酸	Phenylalanine
+侧链有一个苯环，具有芳香性，整体偏疏水。	Its benzene-ring side chain is aromatic and mostly hydrophobic.
+脯氨酸	Proline
+侧链回接到氮原子，形成环状结构，使主链的转动受到限制。	Its side chain loops back to nitrogen, forming a ring that restricts backbone rotation.
+丝氨酸	Serine
+侧链有羟基（—OH），可以与水或其他基团形成氢键。	Its hydroxyl group (—OH) can hydrogen-bond with water or other groups.
+苏氨酸	Threonine
+侧链同时有羟基（—OH）和甲基（—CH₃）。	Its side chain contains both a hydroxyl (—OH) and a methyl group (—CH₃).
+色氨酸	Tryptophan
+侧链有一个较大的吲哚双环结构。	Its side chain has a relatively large fused indole ring system.
+酪氨酸	Tyrosine
+侧链的芳香环上还有一个羟基（—OH）。	Its aromatic ring also carries a hydroxyl group (—OH).
+缬氨酸	Valine
+侧链像一个小小的 Y 形支链，属于疏水侧链。	Its small Y-shaped branched side chain is hydrophobic.
+非极性	Nonpolar
+极性	Polar
+酸性	Acidic
+碱性	Basic
+芳香族	Aromatic
+海甘蓝种子蛋白	Crambin
+植物种子	Plant seeds
+海甘蓝近缘植物的种子	Seeds of a Crambe plant
+小型植物蛋白，常用于研究蛋白质折叠与晶体结构；生物学功能尚未完全明确。	A small plant protein often used to study folding and crystal structures; its biological function is not fully understood.
+单链	Single chain
+泛素	Ubiquitin
+细胞调控	Cell regulation
+人体及其他真核生物的细胞中	Human and other eukaryotic cells
+像一个分子标签，帮助细胞调控蛋白质的降解和其他活动。	A molecular tag that helps cells regulate protein degradation and other activities.
+溶菌酶	Lysozyme
+防御	Defense
+鸡蛋蛋清；同类蛋白也见于人的泪液和唾液	Chicken egg white; related proteins occur in human tears and saliva
+切开某些细菌细胞壁的多糖，参与防御。这里是鸡蛋清溶菌酶。	Cuts polysaccharides in some bacterial cell walls, contributing to defense. This structure is hen egg-white lysozyme.
+肌红蛋白	Myoglobin
+氧气运输	Oxygen transport
+抹香鲸肌肉；同类蛋白广泛存在于脊椎动物肌肉	Sperm whale muscle; related proteins occur in vertebrate muscles
+结合氧气，帮助肌肉储存和利用氧。血红素辅基未在此简化模型中显示。	Binds oxygen to help muscles store and use it. The heme cofactor is omitted from this simplified model.
+血红蛋白	Hemoglobin
+人的红细胞	Human red blood cells
+负责运输氧气。天然血红蛋白由两条 α 链和两条 β 链组成；这里观察其中一条 α 链。	Transports oxygen. Native adult hemoglobin contains two α and two β chains; this view shows one α chain.
+α 亚基；非完整四聚体	α subunit; not the complete tetramer
+胰蛋白酶抑制剂	Pancreatic trypsin inhibitor
+酶调控	Enzyme regulation
+牛的胰腺等组织	Bovine pancreas and other tissues
+结合并抑制胰蛋白酶；三条二硫键帮助稳定这个小蛋白。	Binds and inhibits trypsin. Three disulfide bonds stabilize this small protein.
+核糖核酸酶 A	Ribonuclease A
+消化酶	Digestive enzyme
+牛胰腺分泌的消化液	Digestive secretions from the bovine pancreas
+切断 RNA 中的某些磷酸二酯键，帮助分解 RNA。	Cleaves certain phosphodiester bonds in RNA, helping break it down.
+磷酸丙糖异构酶	Triosephosphate isomerase
+代谢酶	Metabolic enzyme
+鸡肌肉细胞；同类酶也在其他生物细胞中	Chicken muscle cells; related enzymes occur in other organisms
+让两种三碳糖磷酸互相转化，是糖酵解途径的一员。可观察典型的桶状折叠。	Interconverts two three-carbon sugar phosphates in glycolysis. Look for its characteristic barrel fold.
+二聚体中的一个亚基	One subunit of a dimer
+腺苷酸激酶	Adenylate kinase
+大肠杆菌细胞	Escherichia coli cells
+催化 ATP + AMP ⇌ 2 ADP，帮助平衡细胞中的能量分子。这里是与抑制剂结合时的蛋白构象。	Catalyzes ATP + AMP ⇌ 2 ADP, helping balance cellular energy molecules. This conformation is bound to an inhibitor in the source structure.
+一个亚基；抑制剂未显示	One subunit; inhibitor omitted
+绒毛蛋白	Villin
+细胞骨架	Cytoskeleton
+鸡的肠道等上皮细胞微绒毛中	Microvilli of chicken intestinal and other epithelial cells
+完整绒毛蛋白帮助组织肌动蛋白骨架。这里是它的小型 headpiece 子结构域。	Full-length villin helps organize the actin cytoskeleton. This view shows its small headpiece subdomain.
+headpiece 子结构域；非全长	Headpiece subdomain; not full-length
+蛋白 G	Protein G
+抗体结合	Antibody binding
+链球菌表面	Streptococcal cell surface
+能够结合免疫球蛋白，研究中也用来捕获抗体。这里显示 B1 抗体结合结构域。	Binds immunoglobulins and is used in research to capture antibodies. This view shows the B1 binding domain.
+B1 结构域；非全长	B1 domain; not full-length
+胰蛋白酶	Trypsin
+牛胰腺产生，在小肠发挥作用	Produced by the bovine pancreas; acts in the small intestine
+帮助切断蛋白质的肽键，通常在赖氨酸或精氨酸后切割。结构取自与抑制剂形成的复合物。	Cuts peptide bonds, usually after lysine or arginine. The source structure is a complex with an inhibitor.
+酶链 E；抑制剂链未显示	Enzyme chain E; inhibitor chain omitted
+链霉亲和素	Streptavidin
+分子结合	Molecular binding
+亲和链霉菌产生的蛋白	Produced by Streptomyces avidinii
+非常牢固地结合生物素，因此常用于生物实验中的分子捕获。	Binds biotin very tightly and is widely used to capture molecules in laboratory experiments.
+核心结构的一个亚基；非完整四聚体	One core subunit; not the complete tetramer
+天青蛋白	Azurin
+电子传递	Electron transfer
+铜绿假单胞菌的周质空间	Periplasm of Pseudomonas aeruginosa
+含铜的电子传递蛋白，铜中心与蓝色外观有关。此处只展示蛋白质部分。	A copper-containing electron-transfer protein. Its copper center contributes to its blue color. Only the protein portion is shown.
+单链；铜离子未显示	Single chain; copper ion omitted
+核糖体蛋白 L7/L12	Ribosomal protein L7/L12
+蛋白质合成	Protein synthesis
+大肠杆菌核糖体	Escherichia coli ribosomes
+参与核糖体与翻译因子的相互作用，帮助合成蛋白质。这里显示 C 端结构域。	Helps ribosomes interact with translation factors during protein synthesis. This view shows the C-terminal domain.
+C 端结构域；非全长	C-terminal domain; not full-length
+细胞色素 b₅	Cytochrome b5
+牛细胞的内质网膜系统	Endoplasmic-reticulum membrane system in bovine cells
+通过血红素参与电子传递。这里是可溶性结构部分，不包含完整膜锚定区。	Transfers electrons through heme. This is the soluble domain, without the full membrane anchor.
+可溶性结构域；非全长	Soluble domain; not full-length
+细胞色素 c	Cytochrome c
+马心肌细胞的线粒体	Mitochondria in horse heart muscle cells
+在呼吸链中传递电子，参与细胞获取能量。血红素及修饰残基不在简化模型中显示。	Transfers electrons in the respiratory chain, helping cells obtain energy. Heme and modified residues are omitted.
+标准残基部分；修饰位点留空	Standard residues only; modified sites omitted
+芽孢杆菌核糖核酸酶抑制剂	Barstar
+解淀粉芽孢杆菌细胞内	Inside Bacillus amyloliquefaciens cells
+抑制同一细菌产生的 barnase 核糖核酸酶，帮助保护细胞自身的 RNA。	Inhibits the bacterium's own barnase ribonuclease, helping protect its RNA.
+单链；NMR 结构	Single chain; NMR structure
+小清蛋白	Parvalbumin
+钙调控	Calcium regulation
+大鼠肌肉及部分神经细胞	Rat muscle and some nerve cells
+结合钙离子，参与调节细胞内钙的变化。此条目来自黑家鼠。	Binds calcium ions and helps regulate cellular calcium changes. This entry comes from the black rat.
+一个亚基；钙离子未显示	One subunit; calcium ions omitted
+碳酸酐酶 II	Carbonic anhydrase II
+人的红细胞等多种组织	Human red blood cells and many other tissues
+加速二氧化碳与水生成碳酸氢根和氢离子的可逆反应，参与酸碱平衡。	Accelerates the reversible conversion of carbon dioxide and water into bicarbonate and hydrogen ions, contributing to acid–base balance.
+已解析的单链部分；锌离子未显示	Resolved single-chain portion; zinc ion omitted
+118 种元素 · 一个等待探索的世界	118 ELEMENTS · ONE WORLD TO EXPLORE
+元素周期表	Periodic Table of the Elements
+选择一种元素，发现每个原子的独特之处。	Choose an element. Discover what makes every atom unique.
+/ 118 种元素	/ 118 elements
+分类	Category
+所有分类	All categories
+清除筛选	Clear filters
+匹配元素：	Matching elements:
+没有找到元素。试试“氧”、“O”或“8”，或清除筛选。	No elements found. Try “oxygen”, “O” or “8”, or clear the filters.
+列表示族（1–18），行表示周期（1–7）。小屏幕上可以横向滑动。	Columns are groups (1–18). Rows are periods (1–7). On small screens, swipe the table sideways.
+小小的积木。	Small building blocks.
+无限的可能。	Endless possibilities.
+原子序数 · 符号 · 元素名	Atomic number · Symbol · English name
+镧系元素	Lanthanoids
+锕系元素	Actinoids
+原子序数	ATOMIC NUMBER
+认识元素	GET TO KNOW
+它在周期表中的位置	Its place in the table
+原子序数	Atomic number
+周期	Period
+族	Group
+数值采用 IUPAC 2022 年 5 月 4 日版本，省略不确定度。	Values follow the IUPAC 4 May 2022 table; uncertainties are omitted here.
+动手试试 / 电子与电荷	TRY IT / ELECTRONS & CHARGE
+构建原子或离子	Build an atom or ion
+质子	Protons
+电子	Electrons
+净电荷	Net charge
+− 电子	− Electron
++ 电子	+ Electron
+重置	Reset
+改变电子数会改变电荷。质子数仍决定元素身份：	Changing electrons changes the charge. The proton count still identifies
+这是电荷计数模型，不预测离子的稳定性。中子数取决于同位素。	A charge-counting model, not a prediction of which ions are stable. Neutron numbers depend on the isotope.
+名称、符号和质量数值来源：	Names, symbols and mass values:
+IUPAC 元素周期表（2022 年 5 月 4 日）↗	IUPAC Periodic Table (4 May 2022) ↗
+。颜色用于教学分类，不同资料的分类边界可能不同。下方独立两行属于第 6、7 周期。	. Colors are teaching categories; some boundaries vary between references. The detached rows belong to periods 6 and 7.
+搜索元素	Search elements
+名称、符号或原子序数…	Name, symbol or atomic number…
+筛选元素分类	Filter element category
+可横向滚动的元素周期表	Scrollable periodic table
+元素分类	Element categories
+所选元素详情	Selected element details
+上一个元素	Previous element
+下一个元素	Next element
+同位素质量数	Isotope mass number
+相对原子质量（简表值）	Atomic weight (abridged)
+单独列于下方系列	Shown in separate series
+方括号内是所选同位素的质量数，不是平均相对原子质量。	Brackets give the mass number of a selected isotope, not an average atomic weight.
+相对原子质量是根据同位素计算的相对平均值，不是每个原子的质子数与中子数之和。	Atomic weight is a relative average based on isotopes. It is not the number of protons plus neutrons in every atom.
+中性原子	Neutral atom
+正离子	Positive ion
+负离子	Negative ion
+其他非金属	Other nonmetals
+这些元素性质多样，常在共价键中共用电子。氢位于第 1 族，但不是碱金属。	These elements have varied properties and often share electrons in covalent bonds. Hydrogen is placed in group 1 but is not an alkali metal.
+碱金属	Alkali metals
+第 1 族金属通常失去一个电子形成 +1 离子，是活泼的金属。	Group 1 metals commonly lose one electron to form +1 ions. They are reactive metals.
+碱土金属	Alkaline earth metals
+第 2 族金属通常失去两个电子形成 +2 离子。	Group 2 metals commonly form +2 ions by losing two electrons.
+过渡金属	Transition metals
+这一区域的许多金属导电性好，并可形成不同电荷的离子。本教学分类也包括第 12 族。	Many metals in this region conduct electricity well and can form ions with different charges. This school-table category also includes group 12.
+其他金属	Other metals
+这些金属位于周期表偏右侧。这是教学分类，不同周期表的分类边界可能不同。	These metals lie toward the right of the table. This is a teaching classification; category boundaries can vary between tables.
+类金属	Metalloids
+这些元素兼有金属和非金属性质，具体分类边界在不同周期表中可能不同。	These elements show a mixture of metallic and nonmetallic properties. The exact boundaries of this category vary between tables.
+卤素	Halogens
+第 17 族元素在盐中通常形成 −1 离子，性质沿族向下变化。	Group 17 elements commonly form −1 ions in salts. Their properties change as you move down the group.
+稀有气体	Noble gases
+第 18 族包括常见稀有气体。较轻成员的外层电子层已填满，通常很不活泼。	Group 18 includes the familiar noble gases. The lighter members have filled outer electron shells and are generally very unreactive.
+第 57–71 号元素属于第 6 周期，为节省空间而放在主表下方。	Elements 57–71 belong to period 6. They are shown below the main table to keep it compact.
+第 89–103 号元素属于第 7 周期。锕系元素都有放射性，许多由人工制得。	Elements 89–103 belong to period 7. All actinoids are radioactive; many are produced artificially.
+性质仍在研究中	Properties under study
+这些寿命短暂的人工元素难以研究。它们的位置已知，但许多宏观理化性质尚不明确。	These short-lived synthetic elements are difficult to study. Their positions are known, but many bulk chemical and physical properties remain uncertain.
+小小科学家，大大的发现	LITTLE SCIENTISTS, BIG DISCOVERIES
+元素周期表	Periodic Table
+蛋白质 → 氨基酸	PROTEIN → AMINO ACIDS
+整体蛋白质	WHOLE PROTEIN
+氨基酸编号	AMINO ACID #
+20 种真实蛋白质 · 实验结构	20 REAL PROTEINS · EXPERIMENTAL STRUCTURES
+当前探索	NOW EXPLORING
+个已建模残基	modeled residues
+X 射线衍射	X-RAY DIFFRACTION
+溶液核磁共振	SOLUTION NMR
+海甘蓝近缘植物：种子蛋白的来源	Crambe plant: the source of this seed protein
+人类细胞显微图（HeLa）：泛素存在于细胞中	Human cells (HeLa micrograph): ubiquitin occurs inside cells
+鸡蛋：溶菌酶存在于蛋清中	Chicken egg: lysozyme is found in egg white
+抹香鲸：此肌红蛋白结构来自肌肉	Sperm whale: this myoglobin structure comes from muscle
+红细胞示意图：血红蛋白在其中运输氧	Red blood cell illustration: hemoglobin carries oxygen inside these cells
+牛：胰蛋白酶抑制剂见于胰腺等组织	Cattle: pancreatic trypsin inhibitor occurs in the pancreas and other tissues
+牛：核糖核酸酶 A 来自胰腺分泌物	Cattle: ribonuclease A is found in pancreatic secretions
+鸡：此酶结构来自鸡肌肉	Chicken: this enzyme structure comes from muscle
+大肠杆菌显微图：腺苷酸激酶在细胞内工作	E. coli micrograph: adenylate kinase works inside the cell
+鸡：绒毛蛋白见于肠道等上皮细胞的微绒毛	Chicken: villin occurs in intestinal and other epithelial microvilli
+链球菌显微图（属级示意）：蛋白 G 是细菌表面蛋白	Streptococcus micrograph (genus illustration): protein G is a bacterial surface protein
+牛：胰蛋白酶由胰腺产生，在小肠发挥作用	Cattle: trypsin is produced by the pancreas and acts in the small intestine
+链霉菌图像（属级示意）：链霉亲和素由亲和链霉菌产生	Streptomyces image (genus illustration): streptavidin is produced by S. avidinii
+铜绿假单胞菌培养物：天青蛋白来自这种细菌	Pseudomonas aeruginosa culture: the bacterial source of azurin
+大肠杆菌显微图：L7/L12 是其核糖体的一部分	E. coli micrograph: L7/L12 is part of its ribosomes
+牛：细胞色素 b₅ 见于细胞内质网膜系统	Cattle: cytochrome b5 occurs in the endoplasmic-reticulum membrane system
+马：此细胞色素 c 结构来自心肌	Horse: this cytochrome c structure comes from heart muscle
+解淀粉芽孢杆菌培养物：Barstar 的来源	Bacillus amyloliquefaciens culture: the source of barstar
+黑家鼠：此小清蛋白的来源物种	Black rat: the source species of this parvalbumin
+红细胞示意图：人体碳酸酐酶 II 的常见位置之一	Red blood cell illustration: one common location of human carbonic anhydrase II
+氢	Hydrogen
+氦	Helium
+锂	Lithium
+铍	Beryllium
+硼	Boron
+碳	Carbon
+氮	Nitrogen
+氧	Oxygen
+氟	Fluorine
+氖	Neon
+钠	Sodium
+镁	Magnesium
+铝	Aluminium
+硅	Silicon
+磷	Phosphorus
+硫	Sulfur
+氯	Chlorine
+氩	Argon
+钾	Potassium
+钙	Calcium
+钪	Scandium
+钛	Titanium
+钒	Vanadium
+铬	Chromium
+锰	Manganese
+铁	Iron
+钴	Cobalt
+镍	Nickel
+铜	Copper
+锌	Zinc
+镓	Gallium
+锗	Germanium
+砷	Arsenic
+硒	Selenium
+溴	Bromine
+氪	Krypton
+铷	Rubidium
+锶	Strontium
+钇	Yttrium
+锆	Zirconium
+铌	Niobium
+钼	Molybdenum
+锝	Technetium
+钌	Ruthenium
+铑	Rhodium
+钯	Palladium
+银	Silver
+镉	Cadmium
+铟	Indium
+锡	Tin
+锑	Antimony
+碲	Tellurium
+碘	Iodine
+氙	Xenon
+铯	Caesium
+钡	Barium
+镧	Lanthanum
+铈	Cerium
+镨	Praseodymium
+钕	Neodymium
+钷	Promethium
+钐	Samarium
+铕	Europium
+钆	Gadolinium
+铽	Terbium
+镝	Dysprosium
+钬	Holmium
+铒	Erbium
+铥	Thulium
+镱	Ytterbium
+镥	Lutetium
+铪	Hafnium
+钽	Tantalum
+钨	Tungsten
+铼	Rhenium
+锇	Osmium
+铱	Iridium
+铂	Platinum
+金	Gold
+汞	Mercury
+铊	Thallium
+铅	Lead
+铋	Bismuth
+钋	Polonium
+砹	Astatine
+氡	Radon
+钫	Francium
+镭	Radium
+锕	Actinium
+钍	Thorium
+镤	Protactinium
+铀	Uranium
+镎	Neptunium
+钚	Plutonium
+镅	Americium
+锔	Curium
+锫	Berkelium
+锎	Californium
+锿	Einsteinium
+镄	Fermium
+钔	Mendelevium
+锘	Nobelium
+铹	Lawrencium
+𬬻	Rutherfordium
+𬭊	Dubnium
+𬭳	Seaborgium
+𬭛	Bohrium
+𬭶	Hassium
+鿏	Meitnerium
+𫟼	Darmstadtium
+𬬭	Roentgenium
+鿔	Copernicium
+鿭	Nihonium
+𫓧	Flerovium
+镆	Moscovium
+𬭚	Livermorium
+鿬	Tennessine
+鿫	Oganesson
+来源示意	Source illustration
+来源图片暂时不可用	Source image temporarily unavailable
+图片出处 ↗	Image source ↗
+许可 ↗	License ↗
+分子探索	MOLECULE EXPLORER
+步骤 0	STEP 0
+看见变化	WATCH THE CHANGE
+无机化学	INORGANIC CHEMISTRY

@@ -1,0 +1,384 @@
+.periodic-app {
+  min-width: 0;
+}
+.periodic-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 12px 0 24px;
+}
+.periodic-heading h2 {
+  font-size: clamp(23px, 2.8vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  margin: 8px 0;
+}
+.periodic-heading p {
+  font-size: 14px;
+  color: #79887d;
+}
+.periodic-count {
+  font-size: 12px;
+  white-space: nowrap;
+  padding: 8px 14px;
+  background: #e4eee6;
+  border-radius: 20px;
+}
+.periodic-toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.periodic-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: white;
+  border: 1px solid #dbe4df;
+  border-radius: 9px;
+  flex: 1;
+  min-width: 220px;
+}
+.periodic-search input {
+  background: transparent;
+  border: 0;
+  outline: none;
+  width: 100%;
+  font-size: 13px;
+}
+.periodic-search:focus-within {
+  outline: 2px solid #54876d;
+}
+.periodic-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.periodic-filter select {
+  background: white;
+  border: 1px solid #dbe4df;
+  padding: 11px;
+  border-radius: 9px;
+  max-width: 220px;
+}
+.periodic-scroll-hint {
+  font-size: 11px;
+  color: #84958a;
+  margin: 18px 0 12px;
+}
+.periodic-scroll {
+  overflow-x: auto;
+  border: 1px solid #dce5de;
+  background: white;
+  padding: 18px 12px;
+  border-radius: 14px;
+}
+.periodic-grid {
+  display: grid;
+  grid-template-columns: 18px repeat(18, minmax(49px, 1fr));
+  grid-template-rows: 20px repeat(7, 76px) 16px repeat(2, 76px);
+  gap: 5px;
+  min-width: 1000px;
+}
+.periodic-group,
+.periodic-period {
+  font-size: 10px;
+  color: #8b9d91;
+  align-self: center;
+  text-align: center;
+}
+.periodic-table-note {
+  align-self: center;
+  padding-left: 20px;
+  color: #547461;
+}
+.periodic-table-note strong {
+  display: block;
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.periodic-table-note span {
+  display: block;
+  margin-top: 12px;
+  font-size: 11px;
+  color: #8b9e8e;
+}
+.periodic-cell {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  border-radius: 6px;
+  background: var(--element-bg);
+  color: var(--element-ink);
+  padding: 5px 4px;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  position: relative;
+  border: 2px solid transparent;
+}
+.periodic-cell:hover {
+  transform: translateY(-3px);
+  z-index: 1;
+}
+.periodic-cell.selected {
+  border-color: #213f32;
+  box-shadow: 0 0 0 2px #fff;
+}
+.periodic-cell small {
+  font-size: 9px;
+  line-height: 1;
+}
+.periodic-cell strong {
+  font-size: 22px;
+  line-height: 1.4;
+  letter-spacing: -0.6px;
+}
+.periodic-cell span {
+  font-size: clamp(6px, 0.55vw, 9px);
+  line-height: 1.4;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+.periodic-cell.dimmed {
+  opacity: 0.22;
+}
+.periodic-cell.dimmed:hover,
+.periodic-cell.dimmed:focus-visible {
+  opacity: 1;
+}
+.periodic-series {
+  border: 1px dashed #cfdbd2;
+  border-radius: 6px;
+  font-size: 10px;
+  text-align: center;
+  align-content: center;
+  color: #718578;
+}
+.periodic-series-label {
+  font-size: 11px;
+  align-self: center;
+  text-align: right;
+  padding-right: 12px;
+  color: #7d9283;
+}
+.periodic-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 15px;
+  margin: 18px 0 24px;
+}
+.periodic-legend button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #6f8578;
+  border-bottom: 2px solid transparent;
+  padding: 5px 0;
+}
+.periodic-legend button[aria-pressed="true"] {
+  border-color: #4b735c;
+}
+.periodic-legend i {
+  width: 11px;
+  height: 11px;
+  border: 1px solid #00000010;
+  border-radius: 3px;
+}
+.periodic-details {
+  display: grid;
+  grid-template-columns: 190px 1.1fr 1fr;
+  border: 1px solid #dce5de;
+  border-radius: 14px;
+  overflow: hidden;
+  background: white;
+}
+.periodic-identity {
+  padding: 26px 20px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+.periodic-identity > span {
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.periodic-identity > strong {
+  font-size: 80px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+.periodic-identity h3 {
+  font-size: 22px;
+  font-weight: 650;
+}
+.periodic-identity p {
+  font-size: 12px;
+  margin: 8px 0 18px;
+}
+.periodic-facts,
+.periodic-atom {
+  padding: 26px;
+}
+.periodic-facts h3,
+.periodic-atom h3 {
+  font-size: 18px;
+  font-weight: 650;
+  margin: 10px 0 18px;
+}
+.periodic-app dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 12px;
+}
+.periodic-app dt {
+  font-size: 10px;
+  color: #829589;
+  margin-bottom: 4px;
+}
+.periodic-app dd {
+  font-size: 17px;
+  font-weight: 600;
+}
+.periodic-facts p,
+.periodic-atom p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #698071;
+  margin: 18px 0 9px;
+}
+.periodic-facts small,
+.periodic-atom small {
+  font-size: 10px;
+  color: #8a9b90;
+  line-height: 1.7;
+  display: block;
+}
+.periodic-atom {
+  border-left: 1px solid #e6ede8;
+}
+.periodic-charge {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.periodic-charge > strong {
+  font-size: 36px;
+  color: #4b785e;
+}
+.periodic-charge sup {
+  font-size: 16px;
+}
+.periodic-charge span {
+  font-size: 12px;
+  color: #7d9585;
+}
+.periodic-atom dl {
+  grid-template-columns: repeat(3, 1fr);
+}
+.periodic-electron-controls {
+  display: flex;
+  gap: 6px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.periodic-electron-controls button {
+  padding: 7px 10px;
+  border: 1px solid #d7e4dc;
+  border-radius: 6px;
+  font-size: 11px;
+  background: #f5f8f5;
+}
+.periodic-electron-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.periodic-source {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #899d8e;
+  margin-top: 18px;
+}
+.periodic-source a {
+  text-decoration: underline;
+  color: #5b7b66;
+}
+.periodic-results {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px;
+  background: #ecf3ed;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.periodic-results button {
+  padding: 5px 9px;
+  border-radius: 5px;
+  border: 1px solid #d6e4d8;
+  background: white;
+}
+.periodic-results > span {
+  color: #728779;
+  margin-right: 6px;
+}
+@media (max-width: 1000px) {
+  .periodic-details {
+    grid-template-columns: 155px 1fr;
+  }
+  .periodic-atom {
+    grid-column: 1/-1;
+    border-left: 0;
+    border-top: 1px solid #e6ede8;
+  }
+  .periodic-table-note strong {
+    font-size: 20px;
+  }
+}
+@media (max-width: 600px) {
+  .periodic-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .periodic-details {
+    grid-template-columns: 1fr;
+  }
+  .periodic-identity {
+    padding: 18px;
+  }
+  .periodic-identity > strong {
+    font-size: 60px;
+    line-height: 1.1;
+  }
+  .periodic-identity p {
+    margin: 4px;
+  }
+  .periodic-facts,
+  .periodic-atom {
+    padding: 20px;
+  }
+  .periodic-toolbar {
+    gap: 10px;
+  }
+  .periodic-filter select {
+    max-width: 190px;
+  }
+  .periodic-search {
+    flex-basis: 100%;
+  }
+}

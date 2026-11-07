@@ -16,6 +16,7 @@ import {
   ImageIcon,
   Maximize2,
   Minimize2,
+  Orbit,
   Pause,
   Play,
   Plus,
@@ -24,6 +25,7 @@ import {
   SkipBack,
   SkipForward,
   Settings,
+  Telescope,
   Sparkles,
   Trash2,
   Trophy,
@@ -106,6 +108,11 @@ import collisionLabConfigJson from "./data/applications/collision-lab.json";
 import type { HandLandmarker, NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { type ChangeEvent, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
+import { ChemistryLab } from "./ChemistryLab";
+import { MeteorLab } from "./MeteorLab";
+import { TelescopeLab } from "./TelescopeLab";
+import { FreeFallLab } from "./FreeFallLab";
+
 type Mode = "1d" | "2d" | "challenge";
 
 type SpriteEmotion = "happy" | "excited" | "sad" | "dizzy" | "playful" | "sleepy";
@@ -174,7 +181,7 @@ type ApplicationConfig = {
   objects: ApplicationConfigObject[];
 };
 
-type ApplicationId = "collision-lab" | "word-snake" | ArcadeGameId | "settings";
+type ApplicationId = "chemistry-lab" | "collision-lab" | "meteor-lab" | "telescope-lab" | "free-fall-lab" | "word-snake" | ArcadeGameId | "settings";
 
 type NavigationApplication = {
   id: ApplicationId;
@@ -284,7 +291,11 @@ const SETTINGS_CONFIG = {
   tip: "Tip: ask Codex to generate the sprite sheet, then preview the reusable result here."
 };
 const APPLICATION_CONFIGS: NavigationApplication[] = [
+  { id: "chemistry-lab", name: "Chemistry Lab" },
   { id: APPLICATION_CONFIG.id as ApplicationId, name: APPLICATION_CONFIG.name },
+  { id: "meteor-lab", name: "Meteor Lab" },
+  { id: "telescope-lab", name: "Telescope Lab" },
+  { id: "free-fall-lab", name: "Free Fall Lab" },
   { id: WORD_SNAKE_CONFIG.id, name: WORD_SNAKE_CONFIG.name },
   ...ARCADE_GAME_CONFIGS.map((game) => ({ id: game.id as ApplicationId, name: game.name }))
 ];
@@ -416,6 +427,23 @@ export function App() {
   useEffect(() => {
     saveActiveApplicationId(activeApplicationId);
   }, [activeApplicationId]);
+
+  if (activeApplicationId === "chemistry-lab") {
+    return <TooltipProvider><SidebarProvider className="h-dvh min-h-0 overflow-hidden bg-background text-foreground"><PrimarySidebar applications={APPLICATION_CONFIGS} activeApplicationId={activeApplicationId} onSelectApplication={setActiveApplicationId}/><SidebarInset className="h-dvh min-h-0 overflow-hidden"><ChemistryLab/></SidebarInset></SidebarProvider></TooltipProvider>;
+  }
+
+  if (activeApplicationId === "meteor-lab" || activeApplicationId === "telescope-lab" || activeApplicationId === "free-fall-lab") {
+    return (
+      <TooltipProvider>
+        <SidebarProvider className="h-dvh min-h-0 overflow-hidden bg-background text-foreground">
+          <PrimarySidebar applications={APPLICATION_CONFIGS} activeApplicationId={activeApplicationId} onSelectApplication={setActiveApplicationId} />
+          <SidebarInset className="h-dvh min-h-0 overflow-hidden">
+            {activeApplicationId === "meteor-lab" ? <MeteorLab /> : activeApplicationId === "free-fall-lab" ? <FreeFallLab /> : <TelescopeLab />}
+          </SidebarInset>
+        </SidebarProvider>
+      </TooltipProvider>
+    );
+  }
 
   if (activeApplicationId === "word-snake") {
     return (
@@ -3368,7 +3396,7 @@ function PrimarySidebar({
                     aria-label={`Open ${application.name}`}
                     onClick={() => onSelectApplication(application.id)}
                   >
-                    {application.id === "collision-lab" ? <FlaskConical /> : <Gamepad2 />}
+                    {application.id === "meteor-lab" ? <Orbit /> : application.id === "telescope-lab" ? <Telescope /> : application.id === "free-fall-lab" ? <ArrowDown /> : (application.id === "collision-lab" || application.id === "chemistry-lab") ? <FlaskConical /> : <Gamepad2 />}
                     <span>{application.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
