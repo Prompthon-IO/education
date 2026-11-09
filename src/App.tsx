@@ -8,6 +8,7 @@ import {
   CircleDot,
   Camera,
   CameraOff,
+  Clapperboard,
   FlaskConical,
   Gamepad2,
   Hand,
@@ -27,9 +28,12 @@ import {
   Settings,
   Telescope,
   Sparkles,
+  Gift,
   Trash2,
   Trophy,
   Upload,
+  UserPlus,
+  Users,
   X,
   ZoomIn,
   ZoomOut
@@ -64,6 +68,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import {
   Sidebar,
@@ -95,6 +100,7 @@ import {
   type ArcadeGameId
 } from "./arcade-ui";
 import { createLeaderboardStore, type AvatarExpression, type AvatarManifest, type LeaderboardEntry } from "./arcade";
+import { QRCodeSVG } from "qrcode.react";
 import {
   GESTURE_CONSENSUS_THRESHOLD,
   GESTURE_SAMPLE_INTERVAL_MS,
@@ -102,11 +108,24 @@ import {
   resolveGestureConsensus,
   type HandGesture
 } from "./gesture";
+import {
+  buildSnakeMotionTrack,
+  formatSnakeTrackPoints,
+  getSnakeMoveInterval,
+  interpolateSnakeSegments,
+  placeSnakeSymbols,
+  resolveSnakeExecutionDirection,
+  type SnakeCell,
+  type SnakeDirection,
+  type SnakePoint
+} from "./snake-render";
+import { DemoPage } from "./demo-page";
+import { CelebrationStickerPage } from "./celebration-sticker-page";
 import prompthonLogo from "./assets/prompthon-community-light.png";
 import prompthonSquareDarkLogo from "./assets/prompthon-square-dark.png";
 import collisionLabConfigJson from "./data/applications/collision-lab.json";
 import type { HandLandmarker, NormalizedLandmark } from "@mediapipe/tasks-vision";
-import { type ChangeEvent, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { ChemistryLab } from "./ChemistryLab";
 import { MeteorLab } from "./MeteorLab";
@@ -181,7 +200,7 @@ type ApplicationConfig = {
   objects: ApplicationConfigObject[];
 };
 
-type ApplicationId = "chemistry-lab" | "collision-lab" | "meteor-lab" | "telescope-lab" | "free-fall-lab" | "word-snake" | ArcadeGameId | "settings";
+type ApplicationId = "demo" | "celebration-sticker" | "chemistry-lab" | "collision-lab" | "meteor-lab" | "telescope-lab" | "free-fall-lab" | "word-snake" | ArcadeGameId | "settings";
 
 type NavigationApplication = {
   id: ApplicationId;
@@ -189,8 +208,17 @@ type NavigationApplication = {
 };
 
 type PlayerProfile = {
+  id: string;
   name: string;
+  discordId: string;
+  email: string;
   imagePath: string;
+  createdAt: string;
+};
+
+type PlayerRegistry = {
+  players: PlayerProfile[];
+  activePlayerId: string | null;
 };
 
 type ResetPlayerStep = 1 | 2 | 3;
@@ -290,7 +318,17 @@ const SETTINGS_CONFIG = {
   subtitle: "Codex-guided reusable avatar sprite sheets.",
   tip: "Tip: ask Codex to generate the sprite sheet, then preview the reusable result here."
 };
+const DEMO_CONFIG = {
+  id: "demo" as const,
+  name: "Demo"
+};
+const CELEBRATION_STICKER_CONFIG = {
+  id: "celebration-sticker" as const,
+  name: "Free AI Sticker"
+};
 const APPLICATION_CONFIGS: NavigationApplication[] = [
+  { id: DEMO_CONFIG.id, name: DEMO_CONFIG.name },
+  { id: CELEBRATION_STICKER_CONFIG.id, name: CELEBRATION_STICKER_CONFIG.name },
   { id: "chemistry-lab", name: "Chemistry Lab" },
   { id: APPLICATION_CONFIG.id as ApplicationId, name: APPLICATION_CONFIG.name },
   { id: "meteor-lab", name: "Meteor Lab" },
@@ -301,14 +339,22 @@ const APPLICATION_CONFIGS: NavigationApplication[] = [
 ];
 const LIVE_SPRITE_SHEET_PATH = "/generated-avatar/current-sprite-sheet.png";
 const LIVE_SPRITE_SHEET_PREVIEW_PATH = "/generated-avatar/current-sprite-sheet-preview.png";
+const DISCORD_INVITE_QR_PATH = "/generated-avatar/discord-qr.png";
+const PROMPTHON_SIGN_UP_URL = "https://prompthon.io/sign-up?redirect_url=%2Fdashboard%2Fprofile-room";
 const SPRITE_TEMPLATE_PATH = "/generated-avatar/sprite-template-4x7.png";
 const SPRITE_TEMPLATE_MANIFEST_PATH = "/generated-avatar/sprite-template-4x7-manifest.json";
 const SPRITE_TEMPLATE_PREVIEW_PATH = `${SPRITE_TEMPLATE_PATH}?v=header-spacing-v3`;
 const FIXED_AVATAR_SHEET_ASPECT_RATIO = "4 / 7";
 const ACTIVE_APPLICATION_STORAGE_KEY = "prompthon-active-application-id";
+const PLAYER_PROFILE_STORAGE_KEY = "prompthon-player-profile-v1";
+const PLAYER_REGISTRY_STORAGE_KEY = "prompthon-player-registry-v1";
 const DEFAULT_PLAYER_PROFILE: PlayerProfile = {
+  id: "default-player",
   name: import.meta.env.VITE_ARCADE_DEFAULT_PLAYER_NAME || "Player",
-  imagePath: LIVE_SPRITE_SHEET_PATH
+  discordId: "",
+  email: "",
+  imagePath: LIVE_SPRITE_SHEET_PATH,
+  createdAt: ""
 };
 const SPRITE_TEMPLATE_ASSET: ObjectShapeAsset = {
   dataUrl: SPRITE_TEMPLATE_PATH,
@@ -420,13 +466,52 @@ const INITIAL_SNAPSHOT = createSnapshot(INITIAL_SIM_OBJECTS, 0);
 
 export function App() {
   const [activeApplicationId, setActiveApplicationId] = useState<ApplicationId>(() => loadActiveApplicationId());
-  const [playerProfile, setPlayerProfile] = useState<PlayerProfile>(DEFAULT_PLAYER_PROFILE);
+  const [playerRegistry, setPlayerRegistry] = useState<PlayerRegistry>(() => loadPlayerRegistry());
   const liveAvatarAsset = useLiveSpriteSheetAsset();
   const sharedAvatarAsset = liveAvatarAsset ?? INITIAL_OBJECTS[0]?.shapeAsset ?? SPRITE_TEMPLATE_ASSET;
+  const playerProfile = playerRegistry.players.find((player) => player.id === playerRegistry.activePlayerId) ?? DEFAULT_PLAYER_PROFILE;
 
   useEffect(() => {
     saveActiveApplicationId(activeApplicationId);
   }, [activeApplicationId]);
+
+  useEffect(() => {
+    savePlayerRegistry(playerRegistry);
+  }, [playerRegistry]);
+
+  function upsertPlayerProfile(profile: PlayerProfile) {
+    setPlayerRegistry((current) => ({
+      activePlayerId: profile.id,
+      players: current.players.some((player) => player.id === profile.id)
+        ? current.players.map((player) => player.id === profile.id ? profile : player)
+        : [...current.players, profile]
+    }));
+  }
+
+  function selectPlayer(playerId: string) {
+    setPlayerRegistry((current) => current.players.some((player) => player.id === playerId)
+      ? { ...current, activePlayerId: playerId }
+      : current);
+  }
+
+  if (activeApplicationId === "demo") {
+    return (
+      <DemoApp
+        activeApplicationId={activeApplicationId}
+        onSelectApplication={setActiveApplicationId}
+        sharedAvatarAsset={sharedAvatarAsset}
+      />
+    );
+  }
+
+  if (activeApplicationId === "celebration-sticker") {
+    return (
+      <CelebrationStickerApp
+        activeApplicationId={activeApplicationId}
+        onSelectApplication={setActiveApplicationId}
+      />
+    );
+  }
 
   if (activeApplicationId === "chemistry-lab") {
     return <TooltipProvider><SidebarProvider className="h-dvh min-h-0 overflow-hidden bg-background text-foreground"><PrimarySidebar applications={APPLICATION_CONFIGS} activeApplicationId={activeApplicationId} onSelectApplication={setActiveApplicationId}/><SidebarInset className="h-dvh min-h-0 overflow-hidden"><ChemistryLab/></SidebarInset></SidebarProvider></TooltipProvider>;
@@ -474,7 +559,9 @@ export function App() {
         onSelectApplication={setActiveApplicationId}
         sharedAvatarAsset={sharedAvatarAsset}
         playerProfile={playerProfile}
-        onUpdatePlayerProfile={setPlayerProfile}
+        players={playerRegistry.players}
+        onUpdatePlayerProfile={upsertPlayerProfile}
+        onSelectPlayer={selectPlayer}
       />
     );
   }
@@ -515,6 +602,71 @@ function saveActiveApplicationId(applicationId: ApplicationId) {
   }
 }
 
+function loadPlayerRegistry(): PlayerRegistry {
+  if (typeof window === "undefined") {
+    return { players: [], activePlayerId: null };
+  }
+
+  try {
+    const rawRegistry = window.localStorage.getItem(PLAYER_REGISTRY_STORAGE_KEY);
+    if (rawRegistry) {
+      const registry = JSON.parse(rawRegistry) as Partial<PlayerRegistry>;
+      const players = Array.isArray(registry.players) ? registry.players.filter(isSavedPlayerProfile) : [];
+      const activePlayerId = typeof registry.activePlayerId === "string" && players.some((player) => player.id === registry.activePlayerId)
+        ? registry.activePlayerId
+        : players[0]?.id ?? null;
+      return { players, activePlayerId };
+    }
+
+    const rawLegacyProfile = window.localStorage.getItem(PLAYER_PROFILE_STORAGE_KEY);
+    if (!rawLegacyProfile) {
+      return { players: [], activePlayerId: null };
+    }
+    const legacyProfile = JSON.parse(rawLegacyProfile) as Partial<PlayerProfile>;
+    if (typeof legacyProfile.name !== "string" || !legacyProfile.name.trim() || typeof legacyProfile.discordId !== "string" || !legacyProfile.discordId.trim() || typeof legacyProfile.email !== "string" || !legacyProfile.email.trim()) {
+      return { players: [], activePlayerId: null };
+    }
+    const migratedPlayer: PlayerProfile = {
+      id: createPlayerId(),
+      name: legacyProfile.name.trim(),
+      discordId: legacyProfile.discordId.trim(),
+      email: legacyProfile.email.trim(),
+      imagePath: typeof legacyProfile.imagePath === "string" && legacyProfile.imagePath ? legacyProfile.imagePath : DEFAULT_PLAYER_PROFILE.imagePath,
+      createdAt: new Date().toISOString()
+    };
+    return { players: [migratedPlayer], activePlayerId: migratedPlayer.id };
+  } catch {
+    return { players: [], activePlayerId: null };
+  }
+}
+
+function savePlayerRegistry(registry: PlayerRegistry) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(PLAYER_REGISTRY_STORAGE_KEY, JSON.stringify(registry));
+  } catch {
+    // Local storage can be unavailable in private or restricted browser modes.
+  }
+}
+
+function isSavedPlayerProfile(value: unknown): value is PlayerProfile {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const profile = value as Partial<PlayerProfile>;
+  return typeof profile.id === "string" && typeof profile.name === "string" && typeof profile.discordId === "string" && typeof profile.email === "string" && typeof profile.imagePath === "string" && typeof profile.createdAt === "string";
+}
+
+function createPlayerId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `player-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function ArcadeGameApp({
   activeApplicationId,
   onSelectApplication,
@@ -535,7 +687,60 @@ function ArcadeGameApp({
           onSelectApplication={onSelectApplication}
         />
         <SidebarInset className="h-dvh min-h-0 overflow-hidden bg-background">
-          <ArcadeGame gameId={activeApplicationId} avatarAsset={sharedAvatarAsset} playerName={playerProfile.name} />
+          <ArcadeGame
+            gameId={activeApplicationId}
+            avatarAsset={sharedAvatarAsset}
+            playerId={playerProfile.id}
+            playerName={playerProfile.name}
+          />
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
+  );
+}
+
+function DemoApp({
+  activeApplicationId,
+  onSelectApplication,
+  sharedAvatarAsset
+}: {
+  activeApplicationId: ApplicationId;
+  onSelectApplication: (applicationId: ApplicationId) => void;
+  sharedAvatarAsset: ArcadeAvatarAsset | null;
+}) {
+  return (
+    <TooltipProvider>
+      <SidebarProvider className="h-dvh min-h-0 overflow-hidden bg-background text-foreground">
+        <PrimarySidebar
+          applications={APPLICATION_CONFIGS}
+          activeApplicationId={activeApplicationId}
+          onSelectApplication={onSelectApplication}
+        />
+        <SidebarInset className="h-dvh min-h-0 overflow-hidden bg-background">
+          <DemoPage avatarAsset={sharedAvatarAsset} onOpenGame={(gameId) => onSelectApplication(gameId)} />
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
+  );
+}
+
+function CelebrationStickerApp({
+  activeApplicationId,
+  onSelectApplication
+}: {
+  activeApplicationId: ApplicationId;
+  onSelectApplication: (applicationId: ApplicationId) => void;
+}) {
+  return (
+    <TooltipProvider>
+      <SidebarProvider className="h-dvh min-h-0 overflow-hidden bg-background text-foreground">
+        <PrimarySidebar
+          applications={APPLICATION_CONFIGS}
+          activeApplicationId={activeApplicationId}
+          onSelectApplication={onSelectApplication}
+        />
+        <SidebarInset className="h-dvh min-h-0 overflow-hidden bg-background">
+          <CelebrationStickerPage onStart={() => onSelectApplication(SETTINGS_CONFIG.id)} />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
@@ -2220,13 +2425,6 @@ function CollisionLabApp({
   );
 }
 
-type SnakeDirection = "up" | "right" | "down" | "left";
-
-type SnakeCell = {
-  x: number;
-  y: number;
-};
-
 type LetterTarget = SnakeCell & {
   id: string;
   character: string;
@@ -2236,6 +2434,7 @@ type LetterTarget = SnakeCell & {
 type SnakeStatus = "ready" | "running" | "paused" | "won" | "lost";
 
 type GestureCameraStatus = "off" | "loading" | "ready" | "blocked" | "error";
+type GestureTrackerStatus = "idle" | "loading" | "ready" | "error";
 
 type SnakeGameState = {
   snake: SnakeCell[];
@@ -2284,8 +2483,9 @@ const SNAKE_KEY_DIRECTIONS: Record<string, SnakeDirection> = {
 const SNAKE_WORD_FALLBACK = "LEARN FAST!";
 const SNAKE_MAX_PHRASE_LENGTH = 36;
 const SNAKE_MAX_STRIKES = 3;
-const SNAKE_KEYBOARD_TICK_MS = 240;
-const SNAKE_HAND_CONTROL_TICK_MS = 340;
+const SNAKE_REFRESH_MS = 5;
+const SNAKE_KEYBOARD_MOVE_MS = 500;
+const SNAKE_HAND_CONTROL_MOVE_MS = 600;
 const WORD_SNAKE_STATE_STORAGE_KEY = "prompthon-word-snake-state-v1";
 const HAND_LANDMARKER_MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 const HAND_LANDMARKER_WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
@@ -2308,14 +2508,18 @@ function WordSnakeApp({
   const [activeWord, setActiveWord] = useState(savedWordSnakeState?.activeWord ?? "VECTOR");
   const boardSize = useMemo(() => getSnakeBoardSize(activeWord), [activeWord]);
   const [gameState, setGameState] = useState<SnakeGameState>(() => savedWordSnakeState?.gameState ?? createSnakeGameState("VECTOR", getSnakeBoardSize("VECTOR")));
+  const [visibleSnakeTargets, setVisibleSnakeTargets] = useState<LetterTarget[]>(() => gameState.targets);
   const [isSnakePhraseEditorOpen, setIsSnakePhraseEditorOpen] = useState(savedWordSnakeState?.isSnakePhraseEditorOpen ?? true);
   const [snakeRunId, setSnakeRunId] = useState(savedWordSnakeState?.snakeRunId ?? 0);
   const [snakeStartedAt, setSnakeStartedAt] = useState(savedWordSnakeState?.snakeStartedAt ?? 0);
   const [snakeEndedAt, setSnakeEndedAt] = useState(savedWordSnakeState?.snakeEndedAt ?? 0);
   const [snakeLeaderboardRevision, setSnakeLeaderboardRevision] = useState(0);
   const [gestureCameraStatus, setGestureCameraStatus] = useState<GestureCameraStatus>("off");
+  const [gestureTrackerStatus, setGestureTrackerStatus] = useState<GestureTrackerStatus>("idle");
   const [activeGesture, setActiveGesture] = useState<HandGesture>("none");
   const [gestureMessage, setGestureMessage] = useState("Camera off");
+  const [isGestureFingerMissing, setIsGestureFingerMissing] = useState(false);
+  const [cachedExecutionDirection, setCachedExecutionDirection] = useState<SnakeDirection>(savedWordSnakeState?.gameState.direction ?? "down");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
@@ -2323,20 +2527,28 @@ function WordSnakeApp({
   const gestureSamplesRef = useRef<HandGesture[]>([]);
   const lastGestureSampleAtRef = useRef(0);
   const confirmedGestureRef = useRef<HandGesture>("none");
-  const pendingDirectionRef = useRef<SnakeDirection>(savedWordSnakeState?.gameState.direction ?? "right");
+  const executionDirectionCacheRef = useRef<SnakeDirection>(savedWordSnakeState?.gameState.direction ?? "down");
+  const lastSnakeMoveAtRef = useRef(0);
+  const previousSnakeGameStateRef = useRef(gameState);
+  const visibleSnakeTargetsTimeoutRef = useRef<number | null>(null);
 
   const nextCharacter = activeWord[gameState.progress] ?? "";
-  const isHandControlActive = gestureCameraStatus === "ready" || wordSnakeTestMode;
-  const activeSnakeSpeedMs = isHandControlActive ? SNAKE_HAND_CONTROL_TICK_MS : SNAKE_KEYBOARD_TICK_MS;
+  const isHandControlActive = (gestureCameraStatus === "ready" && gestureTrackerStatus === "ready") || wordSnakeTestMode;
+  const baseSnakeMoveMs = isHandControlActive ? SNAKE_HAND_CONTROL_MOVE_MS : SNAKE_KEYBOARD_MOVE_MS;
+  const activeSnakeMoveMs = getSnakeMoveInterval(baseSnakeMoveMs, gameState.progress);
   const keyboardControlsDisabled = !isHandControlActive;
 
   function resetSnake(nextWord = activeWord) {
     const normalizedWord = normalizeSnakePhrase(nextWord);
     const nextBoardSize = getSnakeBoardSize(normalizedWord);
-    pendingDirectionRef.current = "right";
+    const nextGameState = createSnakeGameState(normalizedWord, nextBoardSize);
+    executionDirectionCacheRef.current = "down";
+    setCachedExecutionDirection("down");
     setActiveWord(normalizedWord);
     setWordInput(normalizedWord);
-    setGameState(createSnakeGameState(normalizedWord, nextBoardSize));
+    previousSnakeGameStateRef.current = nextGameState;
+    setVisibleSnakeTargets(nextGameState.targets);
+    setGameState(nextGameState);
     setSnakeRunId((value) => value + 1);
     setSnakeStartedAt(0);
     setSnakeEndedAt(0);
@@ -2348,6 +2560,7 @@ function WordSnakeApp({
     lastGestureSampleAtRef.current = performance.now();
     confirmedGestureRef.current = "none";
     setActiveGesture("none");
+    setIsGestureFingerMissing(false);
   }
 
   function startSnake() {
@@ -2364,7 +2577,7 @@ function WordSnakeApp({
   }
 
   function startSnakeFromOverlay() {
-    if (gestureCameraStatus === "ready" || wordSnakeTestMode) {
+    if (isHandControlActive) {
       startSnake();
       return;
     }
@@ -2385,11 +2598,12 @@ function WordSnakeApp({
     if (source !== "gesture" && keyboardControlsDisabled) {
       return;
     }
-    pendingDirectionRef.current = nextDirection;
+    executionDirectionCacheRef.current = nextDirection;
+    setCachedExecutionDirection(nextDirection);
   }
 
   async function startGestureCamera(startSnakeWhenReady = false) {
-    if (gestureCameraStatus === "loading" || gestureCameraStatus === "ready") {
+    if (gestureCameraStatus === "loading" || gestureTrackerStatus === "loading") {
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -2398,25 +2612,49 @@ function WordSnakeApp({
       return;
     }
 
-    setGestureCameraStatus("loading");
-    setGestureMessage("Loading hand tracker");
-    try {
-      const [{ FilesetResolver, HandLandmarker: HandLandmarkerTask }, stream] = await Promise.all([
-        import("@mediapipe/tasks-vision"),
-        navigator.mediaDevices.getUserMedia({
+    if (!cameraStreamRef.current) {
+      setGestureCameraStatus("loading");
+      setGestureMessage("Starting camera");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
             width: { ideal: 640 },
             height: { ideal: 480 }
           },
           audio: false
-        })
-      ]);
-      cameraStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        });
+        cameraStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setGestureCameraStatus("ready");
+        setGestureMessage("Camera live · Loading hand tracker");
+      } catch (error) {
+        const isPermissionError = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
+        stopGestureCamera(isPermissionError ? "blocked" : "error");
+        setGestureMessage(isPermissionError ? "Camera blocked · Allow access and retry" : "Camera unavailable · Check that it is connected");
+        return;
       }
+    }
+
+    if (handLandmarkerRef.current) {
+      setGestureTrackerStatus("ready");
+      resetGestureSampling();
+      setGestureMessage("Sampling gesture");
+      runGestureLoop();
+      if (startSnakeWhenReady) {
+        setSnakeStartedAt((value) => value || performance.now());
+        setGameState((state) => ({ ...state, status: "running" }));
+      }
+      return;
+    }
+
+    setGestureTrackerStatus("loading");
+    setGestureMessage("Camera live · Loading hand tracker");
+    try {
+      const { FilesetResolver, HandLandmarker: HandLandmarkerTask } = await import("@mediapipe/tasks-vision");
       if (!handLandmarkerRef.current) {
         const vision = await FilesetResolver.forVisionTasks(HAND_LANDMARKER_WASM_URL);
         handLandmarkerRef.current = await HandLandmarkerTask.createFromOptions(vision, {
@@ -2431,7 +2669,7 @@ function WordSnakeApp({
           minTrackingConfidence: 0.55
         });
       }
-      setGestureCameraStatus("ready");
+      setGestureTrackerStatus("ready");
       resetGestureSampling();
       setGestureMessage("Sampling gesture");
       runGestureLoop();
@@ -2440,8 +2678,8 @@ function WordSnakeApp({
         setGameState((state) => ({ ...state, status: "running" }));
       }
     } catch (error) {
-      stopGestureCamera("error");
-      setGestureMessage(error instanceof DOMException && error.name === "NotAllowedError" ? "Camera blocked" : "Camera failed");
+      setGestureTrackerStatus("error");
+      setGestureMessage("Camera live · Hand tracking unavailable");
     }
   }
 
@@ -2457,6 +2695,7 @@ function WordSnakeApp({
     }
     resetGestureSampling();
     setGestureCameraStatus(nextStatus);
+    setGestureTrackerStatus(handLandmarkerRef.current ? "ready" : "idle");
     if (nextStatus === "off") {
       setGestureMessage("Camera off");
     }
@@ -2479,7 +2718,19 @@ function WordSnakeApp({
       lastGestureSampleAtRef.current = now;
 
       const result = landmarker.detectForVideo(video, now);
-      const sample = classifyHandGesture(result.landmarks[0]);
+      const handLandmarks = result.landmarks[0];
+      if (!handLandmarks) {
+        gestureSamplesRef.current = [];
+        confirmedGestureRef.current = "none";
+        setActiveGesture("none");
+        setIsGestureFingerMissing(true);
+        setGestureMessage("Can't detect your finger. Put your finger inside the camera view.");
+        gestureFrameRef.current = requestAnimationFrame(detectFrame);
+        return;
+      }
+
+      setIsGestureFingerMissing(false);
+      const sample = classifyHandGesture(handLandmarks);
       const samples = [...gestureSamplesRef.current, sample].slice(-GESTURE_SAMPLE_WINDOW_SIZE);
       gestureSamplesRef.current = samples;
       const consensus = resolveGestureConsensus(samples);
@@ -2487,7 +2738,7 @@ function WordSnakeApp({
       if (!consensus) {
         confirmedGestureRef.current = "none";
         setActiveGesture("none");
-        setGestureMessage(samples.length < GESTURE_SAMPLE_WINDOW_SIZE ? `Sampling gesture ${samples.length}/${GESTURE_SAMPLE_WINDOW_SIZE}` : "Hold gesture steady");
+        setGestureMessage(samples.length < GESTURE_SAMPLE_WINDOW_SIZE ? `Sampling gesture ${samples.length}/${GESTURE_SAMPLE_WINDOW_SIZE}` : "Hold one direction steady");
       } else {
         setActiveGesture(consensus);
         setGestureMessage(formatHandGestureMessage(consensus));
@@ -2552,12 +2803,40 @@ function WordSnakeApp({
       return;
     }
 
+    lastSnakeMoveAtRef.current = performance.now();
     const intervalId = window.setInterval(() => {
-      setGameState((state) => advanceSnakeGame(state, pendingDirectionRef.current, activeWord, boardSize));
-    }, activeSnakeSpeedMs);
+      const now = performance.now();
+      if (now - lastSnakeMoveAtRef.current < activeSnakeMoveMs) {
+        return;
+      }
+      lastSnakeMoveAtRef.current = now;
+      const cachedDirectionAtCellCenter = executionDirectionCacheRef.current;
+      setGameState((state) => advanceSnakeGame(state, cachedDirectionAtCellCenter, activeWord, boardSize));
+    }, SNAKE_REFRESH_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [activeWord, boardSize, gameState.status, activeSnakeSpeedMs]);
+  }, [activeWord, boardSize, gameState.status, activeSnakeMoveMs]);
+
+  useLayoutEffect(() => {
+    const previousGameState = previousSnakeGameStateRef.current;
+    previousSnakeGameStateRef.current = gameState;
+
+    if (visibleSnakeTargetsTimeoutRef.current !== null) {
+      window.clearTimeout(visibleSnakeTargetsTimeoutRef.current);
+      visibleSnakeTargetsTimeoutRef.current = null;
+    }
+
+    if (gameState.progress > previousGameState.progress) {
+      setVisibleSnakeTargets(previousGameState.targets);
+      visibleSnakeTargetsTimeoutRef.current = window.setTimeout(() => {
+        setVisibleSnakeTargets(gameState.targets);
+        visibleSnakeTargetsTimeoutRef.current = null;
+      }, activeSnakeMoveMs);
+      return;
+    }
+
+    setVisibleSnakeTargets(gameState.targets);
+  }, [activeSnakeMoveMs, gameState]);
 
   useEffect(() => {
     saveWordSnakeState({
@@ -2604,6 +2883,9 @@ function WordSnakeApp({
 
   useEffect(() => {
     return () => {
+      if (visibleSnakeTargetsTimeoutRef.current !== null) {
+        window.clearTimeout(visibleSnakeTargetsTimeoutRef.current);
+      }
       if (gestureFrameRef.current !== null) {
         cancelAnimationFrame(gestureFrameRef.current);
       }
@@ -2679,8 +2961,8 @@ function WordSnakeApp({
                           size="icon"
                           variant={gestureCameraStatus === "ready" ? "outline" : "default"}
                           aria-label={gestureCameraStatus === "ready" ? "Turn camera off" : "Turn camera on"}
-                          title={isSnakePhraseEditorOpen ? "Confirm words first" : gestureCameraStatus === "ready" ? "Camera off" : gestureCameraStatus === "loading" ? "Loading camera" : "Camera on"}
-                          disabled={isSnakePhraseEditorOpen || gestureCameraStatus === "loading"}
+                          title={isSnakePhraseEditorOpen ? "Confirm words first" : gestureCameraStatus === "ready" ? "Camera off" : gestureCameraStatus === "loading" || gestureTrackerStatus === "loading" ? "Loading camera" : "Camera on"}
+                          disabled={isSnakePhraseEditorOpen || gestureCameraStatus === "loading" || gestureTrackerStatus === "loading"}
                           onClick={gestureCameraStatus === "ready" ? () => stopGestureCamera() : () => void startGestureCamera(false)}
                         >
                           {gestureCameraStatus === "ready" ? <CameraOff /> : <Camera />}
@@ -2723,11 +3005,14 @@ function WordSnakeApp({
                         aria-label={`${WORD_SNAKE_CONFIG.name} board`}
                         data-control-mode={wordSnakeTestMode ? "test" : isHandControlActive ? "camera" : "keyboard"}
                         data-keyboard-disabled={keyboardControlsDisabled ? "true" : "false"}
-                        data-snake-speed-ms={activeSnakeSpeedMs}
+                        data-snake-refresh-ms={SNAKE_REFRESH_MS}
+                        data-snake-base-speed-ms={baseSnakeMoveMs}
+                        data-snake-speed-ms={activeSnakeMoveMs}
+                        data-execution-cache={cachedExecutionDirection}
                       >
                         {Array.from({ length: boardSize * boardSize }, (_, index) => {
                           const cell = { x: index % boardSize, y: Math.floor(index / boardSize) };
-                          const target = gameState.targets.find((item) => sameSnakeCell(item, cell));
+                          const target = visibleSnakeTargets.find((item) => sameSnakeCell(item, cell));
                           const isSnake = gameState.snake.some((segment) => sameSnakeCell(segment, cell));
 
                           return (
@@ -2741,37 +3026,18 @@ function WordSnakeApp({
                             </div>
                           );
                         })}
-                        {gameState.snake.map((segment, segmentIndex) => {
-                          const cellSizePercent = 100 / boardSize;
-                          return (
-                            <div
-                              key={segmentIndex}
-                              className="pointer-events-none absolute z-10 transition-[left,top] ease-linear motion-reduce:transition-none"
-                              data-snake-motion-segment={segmentIndex}
-                              data-snake-x={segment.x}
-                              data-snake-y={segment.y}
-                              data-snake-transition-ms={gameState.status === "running" ? activeSnakeSpeedMs : 0}
-                              style={{
-                                left: `${segment.x * cellSizePercent}%`,
-                                top: `${segment.y * cellSizePercent}%`,
-                                width: `${cellSizePercent}%`,
-                                height: `${cellSizePercent}%`,
-                                transitionDuration: gameState.status === "running" ? `${activeSnakeSpeedMs}ms` : "0ms"
-                              }}
-                            >
-                              <SnakeSegment
-                                snake={gameState.snake}
-                                segmentIndex={segmentIndex}
-                                avatarAsset={sharedAvatarAsset}
-                                avatarManifest={avatarManifest}
-                                expression={getSnakeAvatarExpression(gameState.status, false)}
-                              />
-                            </div>
-                          );
-                        })}
+                        <SmoothSnakeLayer
+                          snake={gameState.snake}
+                          collectedSymbols={Array.from(activeWord.slice(0, gameState.progress))}
+                          boardSize={boardSize}
+                          stepDurationMs={activeSnakeMoveMs}
+                          avatarAsset={sharedAvatarAsset}
+                          avatarManifest={avatarManifest}
+                          expression={getSnakeAvatarExpression(gameState.status, false)}
+                        />
                       </div>
                       {!isSnakePhraseEditorOpen && gameState.status === "ready" ? (
-                        <GameStartOverlay onStart={startSnakeFromOverlay} disabled={gestureCameraStatus === "loading"} className="inset-4" />
+                        <GameStartOverlay onStart={startSnakeFromOverlay} disabled={gestureCameraStatus === "loading" || gestureTrackerStatus === "loading"} className="inset-4" />
                       ) : null}
                     </CardContent>
                   </Card>
@@ -2784,7 +3050,7 @@ function WordSnakeApp({
                             <video
                               ref={videoRef}
                               className={cn(
-                                "size-full scale-x-[-1] object-cover",
+                                "size-full scale-x-[-1] object-contain",
                                 gestureCameraStatus === "ready" ? "opacity-100" : "opacity-0"
                               )}
                               muted
@@ -2800,6 +3066,16 @@ function WordSnakeApp({
                                 ) : (
                                   <Camera className="size-8" />
                                 )}
+                              </div>
+                            ) : null}
+                            {gestureCameraStatus === "ready" && gestureTrackerStatus !== "ready" ? (
+                              <div className="absolute left-2 top-2 rounded-md bg-background/90 px-2 py-1 text-[11px] font-black text-foreground shadow-sm backdrop-blur">
+                                {gestureMessage}
+                              </div>
+                            ) : null}
+                            {gestureCameraStatus === "ready" && gestureTrackerStatus === "ready" && isGestureFingerMissing ? (
+                              <div className="absolute inset-x-3 top-3 rounded-md border border-destructive/45 bg-destructive/90 px-3 py-2 text-center text-[11px] font-black leading-snug text-destructive-foreground shadow-sm">
+                                {gestureMessage}
                               </div>
                             ) : null}
                             <GestureDirectionPad activeGesture={activeGesture} className="absolute bottom-3 right-3" />
@@ -2844,29 +3120,43 @@ function AvatarSettingsApp({
   onSelectApplication,
   sharedAvatarAsset,
   playerProfile,
-  onUpdatePlayerProfile
+  players,
+  onUpdatePlayerProfile,
+  onSelectPlayer
 }: {
   activeApplicationId: ApplicationId;
   onSelectApplication: (applicationId: ApplicationId) => void;
   sharedAvatarAsset: ObjectShapeAsset | null;
   playerProfile: PlayerProfile;
+  players: PlayerProfile[];
   onUpdatePlayerProfile: (profile: PlayerProfile) => void;
+  onSelectPlayer: (playerId: string) => void;
 }) {
   const liveAvatarAsset = useLiveSpriteSheetAsset();
   const [avatarPreviewMode, setAvatarPreviewMode] = useState<"live" | "template">("live");
   const [isResetPlayerOpen, setIsResetPlayerOpen] = useState(false);
-  const [draftPlayerName, setDraftPlayerName] = useState(playerProfile.name);
+  const [isPlayerListOpen, setIsPlayerListOpen] = useState(false);
+  const [draftPlayerId, setDraftPlayerId] = useState(() => createPlayerId());
+  const [draftPlayerCreatedAt, setDraftPlayerCreatedAt] = useState(() => new Date().toISOString());
+  const [draftPlayerName, setDraftPlayerName] = useState("");
+  const [draftDiscordId, setDraftDiscordId] = useState("");
+  const [draftEmail, setDraftEmail] = useState("");
   const [resetPlayerStep, setResetPlayerStep] = useState<ResetPlayerStep>(1);
   const [resetBaselineVersion, setResetBaselineVersion] = useState("");
   const [resetResultImagePath, setResetResultImagePath] = useState(LIVE_SPRITE_SHEET_PATH);
+  const resetPlayerFormRef = useRef<HTMLFormElement>(null);
   const generatedAvatarAsset = liveAvatarAsset ?? sharedAvatarAsset;
   const hasGeneratedAvatarAsset = Boolean(generatedAvatarAsset);
   const visibleAvatarAsset =
     avatarPreviewMode === "template" ? SPRITE_TEMPLATE_ASSET : generatedAvatarAsset ?? SPRITE_TEMPLATE_ASSET;
   const resetPlayerImagePath = generatedAvatarAsset?.dataUrl ?? LIVE_SPRITE_SHEET_PATH;
 
-  function openResetPlayerModal() {
-    setDraftPlayerName(playerProfile.name);
+  function openAddNewPlayerModal() {
+    setDraftPlayerId(createPlayerId());
+    setDraftPlayerCreatedAt(new Date().toISOString());
+    setDraftPlayerName("");
+    setDraftDiscordId("");
+    setDraftEmail("");
     setResetPlayerStep(1);
     setResetBaselineVersion(liveAvatarAsset?.version ?? "");
     setResetResultImagePath(resetPlayerImagePath);
@@ -2876,8 +3166,12 @@ function AvatarSettingsApp({
   function saveResetPlayerWithImage(imagePath = resetPlayerImagePath) {
     setResetResultImagePath(imagePath);
     onUpdatePlayerProfile({
+      id: draftPlayerId,
       name: draftPlayerName.trim() || DEFAULT_PLAYER_PROFILE.name,
-      imagePath
+      discordId: draftDiscordId.trim(),
+      email: draftEmail.trim(),
+      imagePath,
+      createdAt: draftPlayerCreatedAt
     });
   }
 
@@ -2885,6 +3179,12 @@ function AvatarSettingsApp({
     event.preventDefault();
     saveResetPlayerWithImage();
     setIsResetPlayerOpen(false);
+  }
+
+  function continueFromPlayerProfile() {
+    if (resetPlayerFormRef.current?.reportValidity()) {
+      setResetPlayerStep(2);
+    }
   }
 
   function useDefaultPlayerImage() {
@@ -2945,8 +3245,13 @@ function AvatarSettingsApp({
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">Player: {playerProfile.name}</Badge>
-                <Button type="button" variant="outline" size="sm" onClick={openResetPlayerModal}>
-                  Reset Player
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsPlayerListOpen(true)}>
+                  <Users data-icon="inline-start" />
+                  Select Player
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={openAddNewPlayerModal}>
+                  <UserPlus data-icon="inline-start" />
+                  Add New Player
                 </Button>
               </div>
             </header>
@@ -3134,11 +3439,11 @@ function AvatarSettingsApp({
 
             {isResetPlayerOpen ? (
               <div className="fixed inset-0 z-50 grid place-items-center bg-black/20 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-player-title">
-                <form onSubmit={saveResetPlayer} className="grid max-h-[92dvh] w-full max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
+                <form ref={resetPlayerFormRef} onSubmit={saveResetPlayer} className="grid max-h-[92dvh] w-full max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
                   <div className="flex items-start justify-between gap-3 border-b p-4">
                     <div className="min-w-0">
-                      <h2 id="reset-player-title" className="text-lg font-black leading-tight">Reset Player</h2>
-                      <p className="mt-1 text-sm font-medium text-muted-foreground">Set the player name, create a sticker avatar, then start playing.</p>
+                      <h2 id="reset-player-title" className="text-lg font-black leading-tight">Add New Player</h2>
+                      <p className="mt-1 text-sm font-medium text-muted-foreground">Register the player, complete the community steps, then create a sticker avatar.</p>
                     </div>
                     <Button type="button" variant="ghost" size="icon" aria-label="Close reset player" onClick={() => setIsResetPlayerOpen(false)}>
                       <X />
@@ -3149,7 +3454,7 @@ function AvatarSettingsApp({
                     <div className="grid gap-2">
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { step: 1, label: "Name" },
+                          { step: 1, label: "Profile" },
                           { step: 2, label: "Create" },
                           { step: 3, label: "Play" }
                         ].map((item) => (
@@ -3164,21 +3469,86 @@ function AvatarSettingsApp({
                     </div>
 
                     {resetPlayerStep === 1 ? (
-                      <section className="mx-auto grid w-full max-w-xl gap-4 rounded-lg border border-input p-4">
-                        <div>
-                          <h3 className="text-base font-black">Player name</h3>
-                          <p className="mt-1 text-sm font-medium text-muted-foreground">This name is used by Word Snake and the arcade leaderboards.</p>
-                        </div>
-                        <Field>
-                          <FieldLabel htmlFor="player-name">Name</FieldLabel>
-                          <Input
-                            id="player-name"
-                            value={draftPlayerName}
-                            onChange={(event) => setDraftPlayerName(event.target.value)}
-                            placeholder="Enter player name"
-                            autoFocus
-                          />
-                        </Field>
+                      <section className="mx-auto grid w-full max-w-4xl gap-4 lg:grid-cols-2">
+                        <section className="grid content-start gap-4 rounded-lg border border-input p-4">
+                          <div>
+                            <h3 className="text-base font-black">Player profile</h3>
+                            <p className="mt-1 text-sm font-medium text-muted-foreground">All fields are required. This information stays on this machine and identifies the player in the arcade.</p>
+                          </div>
+                          <Field>
+                            <FieldLabel htmlFor="player-name">Name</FieldLabel>
+                            <Input
+                              id="player-name"
+                              value={draftPlayerName}
+                              onChange={(event) => setDraftPlayerName(event.target.value)}
+                              placeholder="Enter player name"
+                              minLength={2}
+                              maxLength={80}
+                              required
+                              autoComplete="name"
+                              autoFocus
+                            />
+                          </Field>
+                          <Field>
+                            <FieldLabel htmlFor="player-discord-id">Discord ID or username</FieldLabel>
+                            <Input
+                              id="player-discord-id"
+                              value={draftDiscordId}
+                              onChange={(event) => setDraftDiscordId(event.target.value)}
+                              placeholder="Discord ID or username"
+                              pattern="[A-Za-z0-9._]{2,32}"
+                              title="Enter a Discord username or numeric Discord ID without spaces."
+                              minLength={2}
+                              maxLength={32}
+                              required
+                              autoComplete="off"
+                            />
+                          </Field>
+                          <Field>
+                            <FieldLabel htmlFor="player-email">Email</FieldLabel>
+                            <Input
+                              id="player-email"
+                              type="email"
+                              value={draftEmail}
+                              onChange={(event) => setDraftEmail(event.target.value)}
+                              placeholder="player@example.com"
+                              maxLength={254}
+                              required
+                              autoComplete="email"
+                            />
+                          </Field>
+                        </section>
+
+                        <aside className="grid content-start gap-3 rounded-lg border border-input bg-muted/30 p-4" aria-label="Community registration steps">
+                          <div>
+                            <h3 className="text-base font-black">Complete these two steps</h3>
+                            <p className="mt-1 text-sm font-medium text-muted-foreground">A volunteer can help confirm both steps before the player continues.</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <a
+                              href={PROMPTHON_SIGN_UP_URL}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="grid content-start justify-items-center gap-2 rounded-lg border bg-background p-3 text-center transition-colors hover:border-primary"
+                              aria-label="Open Prompthon account registration"
+                            >
+                              <Badge className="justify-self-start rounded-full">1</Badge>
+                              <QRCodeSVG value={PROMPTHON_SIGN_UP_URL} size={132} level="M" marginSize={2} aria-label="Prompthon account registration QR code" />
+                              <div>
+                                <div className="text-sm font-black">Create Prompthon account</div>
+                                <p className="mt-1 text-xs font-semibold leading-relaxed text-muted-foreground">Use the email entered on the left.</p>
+                              </div>
+                            </a>
+                            <div className="grid content-start justify-items-center gap-2 rounded-lg border bg-background p-3 text-center">
+                              <Badge className="justify-self-start rounded-full">2</Badge>
+                              <img src={DISCORD_INVITE_QR_PATH} alt="Discord server invite QR code" className="size-[132px] rounded-md bg-white object-contain p-1" />
+                              <div>
+                                <div className="text-sm font-black">Join Discord server</div>
+                                <p className="mt-1 text-xs font-semibold leading-relaxed text-muted-foreground">Scan, join, then enter the same Discord ID.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </aside>
                       </section>
                     ) : null}
 
@@ -3300,12 +3670,77 @@ function AvatarSettingsApp({
                       </Button>
                     ) : null}
                     {resetPlayerStep === 1 ? (
-                      <Button type="button" onClick={() => setResetPlayerStep(2)}>Next</Button>
+                      <Button type="button" onClick={continueFromPlayerProfile}>Next</Button>
                     ) : null}
                   </div>
                 </form>
               </div>
             ) : null}
+
+            <Sheet open={isPlayerListOpen} onOpenChange={setIsPlayerListOpen}>
+              <SheetContent side="right" className="w-full sm:max-w-md">
+                <SheetHeader className="border-b">
+                  <SheetTitle className="flex items-center gap-2 text-lg font-black">
+                    <Users className="size-5" />
+                    Select a Player
+                  </SheetTitle>
+                  <SheetDescription>Choose a registered player to make their profile active across the arcade.</SheetDescription>
+                </SheetHeader>
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+                  {players.length ? (
+                    <div className="grid gap-3">
+                      {players.map((player) => {
+                        const isActive = player.id === playerProfile.id;
+                        return (
+                          <button
+                            key={player.id}
+                            type="button"
+                            aria-label={`Select player ${player.name}`}
+                            aria-pressed={isActive}
+                            onClick={() => {
+                              onSelectPlayer(player.id);
+                              setIsPlayerListOpen(false);
+                            }}
+                            className={cn(
+                              "grid w-full grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-muted/50",
+                              isActive && "border-primary bg-primary/5"
+                            )}
+                          >
+                            <div className="grid size-14 place-items-center overflow-hidden rounded-full border bg-muted">
+                              <img src={player.imagePath} alt="" className="size-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate font-black">{player.name}</div>
+                              <div className="mt-0.5 truncate text-xs font-semibold text-muted-foreground">{player.discordId}</div>
+                              <div className="truncate text-xs text-muted-foreground">{player.email}</div>
+                            </div>
+                            {isActive ? <Badge><Check className="size-3" /> Active</Badge> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="grid justify-items-center gap-3 rounded-lg border border-dashed p-8 text-center">
+                      <Users className="size-8 text-muted-foreground" />
+                      <div>
+                        <div className="font-black">No registered players yet</div>
+                        <p className="mt-1 text-sm text-muted-foreground">Add the first player to start the local registry.</p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setIsPlayerListOpen(false);
+                          openAddNewPlayerModal();
+                        }}
+                      >
+                        <UserPlus data-icon="inline-start" />
+                        Add New Player
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </main>
         </SidebarInset>
       </SidebarProvider>
@@ -3396,7 +3831,7 @@ function PrimarySidebar({
                     aria-label={`Open ${application.name}`}
                     onClick={() => onSelectApplication(application.id)}
                   >
-                    {application.id === "meteor-lab" ? <Orbit /> : application.id === "telescope-lab" ? <Telescope /> : application.id === "free-fall-lab" ? <ArrowDown /> : (application.id === "collision-lab" || application.id === "chemistry-lab") ? <FlaskConical /> : <Gamepad2 />}
+                    {application.id === "demo" ? <Clapperboard /> : application.id === "celebration-sticker" ? <Gift /> : application.id === "meteor-lab" ? <Orbit /> : application.id === "telescope-lab" ? <Telescope /> : application.id === "free-fall-lab" ? <ArrowDown /> : (application.id === "collision-lab" || application.id === "chemistry-lab") ? <FlaskConical /> : <Gamepad2 />}
                     <span>{application.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -3524,200 +3959,164 @@ function SnakePhrasePreview({ phrase, progress }: { phrase: string; progress: nu
   );
 }
 
-function SnakeSegment({
+function SmoothSnakeLayer({
   snake,
-  segmentIndex,
+  collectedSymbols,
+  boardSize,
+  stepDurationMs,
   avatarAsset,
   avatarManifest,
   expression
 }: {
   snake: SnakeCell[];
-  segmentIndex: number;
+  collectedSymbols: string[];
+  boardSize: number;
+  stepDurationMs: number;
   avatarAsset: ObjectShapeAsset | null;
   avatarManifest: AvatarManifest;
   expression: AvatarExpression;
 }) {
-  const isHead = segmentIndex === 0;
-  const isTail = segmentIndex === snake.length - 1;
-  const color = "#10a37f";
-  const connections = getSnakeSegmentConnections(snake, segmentIndex);
-  const isEndpoint = isHead || isTail;
-  const isStraight =
-    connections.length === 2 &&
-    ((connections.includes("left") && connections.includes("right")) ||
-      (connections.includes("up") && connections.includes("down")));
-  const endpointDirection = connections[0] ?? "right";
+  const trackClipId = `snake-track-${useId().replace(/:/g, "")}`;
+  const initialSnake = snake.map((cell) => ({ ...cell }));
+  const previousSnakeRef = useRef<SnakePoint[]>(initialSnake);
+  const animationFrameRef = useRef<number | null>(null);
+  const [motion, setMotion] = useState(() => ({
+    fromSnake: initialSnake as SnakePoint[],
+    toSnake: initialSnake,
+    progress: 1
+  }));
+
+  useEffect(() => {
+    const fromSnake = previousSnakeRef.current.map((point) => ({ ...point }));
+    const toSnake = snake.map((cell) => ({ ...cell }));
+    previousSnakeRef.current = toSnake;
+
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (sameSnakePointList(fromSnake, toSnake)) {
+      setMotion({ fromSnake: toSnake, toSnake, progress: 1 });
+      return;
+    }
+
+    const startedAt = performance.now();
+    const durationMs = Math.max(1, stepDurationMs);
+    setMotion({ fromSnake, toSnake, progress: 0 });
+
+    const renderFrame = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / durationMs);
+      setMotion({ fromSnake, toSnake, progress });
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(renderFrame);
+      } else {
+        animationFrameRef.current = null;
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(renderFrame);
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [snake, stepDurationMs]);
+
+  const track = buildSnakeMotionTrack(motion.fromSnake, motion.toSnake, motion.progress);
+  const segmentPoints = interpolateSnakeSegments(motion.fromSnake, motion.toSnake, motion.progress);
+  const symbolPlacements = placeSnakeSymbols(collectedSymbols, motion.fromSnake, motion.toSnake, motion.progress);
+  const head = segmentPoints[0];
+  if (!head) {
+    return null;
+  }
+
+  const cellPercent = 100 / boardSize;
+  const avatarInset = 0.07;
+  const avatarSize = 0.86;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10" data-snake-segment={segmentIndex} aria-hidden="true">
-      {isEndpoint ? (
-        <>
-          <span className="absolute" data-snake-part="endpoint-rect" style={getSnakeEndpointRectStyle(endpointDirection, color)} />
-          <span
-            className={cn("absolute rounded-full shadow-sm", isHead && "shadow-[0_2px_5px_rgba(7,17,31,0.22)]")}
-            data-snake-part="endpoint-cap"
-            style={getSnakeEndpointCapStyle(endpointDirection, color)}
-          />
-        </>
-      ) : isStraight ? (
-        <span
-          className="absolute"
-          data-snake-part="straight"
-          style={getSnakeStraightStyle(connections.includes("left") ? "horizontal" : "vertical", color)}
+    <div className="pointer-events-none absolute inset-0 z-10" aria-hidden="true">
+      <svg
+        className="absolute inset-0 size-full overflow-visible"
+        viewBox={`0 0 ${boardSize} ${boardSize}`}
+        preserveAspectRatio="none"
+        data-snake-part="motion-track"
+        data-snake-motion-progress={motion.progress.toFixed(3)}
+        data-snake-head-x={head.x.toFixed(3)}
+        data-snake-head-y={head.y.toFixed(3)}
+      >
+        <defs>
+          <clipPath id={trackClipId}>
+            <polyline
+              points={formatSnakeTrackPoints(track)}
+              fill="none"
+              stroke="white"
+              strokeWidth="0.58"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </clipPath>
+        </defs>
+        <polyline
+          points={formatSnakeTrackPoints(track)}
+          fill="none"
+          stroke="#10a37f"
+          strokeWidth="0.58"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-      ) : (
-        <>
-          {connections.map((direction) => (
-            <span key={direction} className="absolute" data-snake-part={`connector-${direction}`} style={getSnakeConnectorStyle(direction, color)} />
+        <g clipPath={`url(#${trackClipId})`} data-snake-part="collected-symbols">
+          {symbolPlacements.map(({ symbol, point }, index) => (
+            <text
+              key={`${index}-${symbol}`}
+              x={point.x + 0.5}
+              y={point.y + 0.5}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="rgba(7, 17, 31, 0.7)"
+              fontSize="0.3"
+              fontWeight="900"
+              letterSpacing="0"
+              data-snake-symbol={symbol}
+            >
+              {symbol}
+            </text>
           ))}
-          <span className="absolute rounded-[28%]" data-snake-part="elbow" style={getSnakeElbowStyle(color)} />
-        </>
-      )}
-      {isHead && avatarAsset ? (
+        </g>
+      </svg>
+      {avatarAsset ? (
         <AvatarSprite
           asset={avatarAsset}
           manifest={avatarManifest}
           expression={expression}
           className="absolute z-20"
-          style={getSnakeHeadAvatarStyle()}
+          style={{
+            left: `${(head.x + avatarInset) * cellPercent}%`,
+            top: `${(head.y + avatarInset) * cellPercent}%`,
+            width: `${avatarSize * cellPercent}%`,
+            height: `${avatarSize * cellPercent}%`
+          }}
         />
-      ) : isHead ? (
-        <span className="absolute size-[16%] rounded-full bg-white/95 shadow-sm" data-snake-part="eye" style={getSnakeEyeStyle(endpointDirection)} />
-      ) : null}
+      ) : (
+        <span
+          className="absolute z-20 rounded-full bg-white/95 shadow-sm"
+          data-snake-part="eye"
+          style={{
+            left: `${(head.x + 0.42) * cellPercent}%`,
+            top: `${(head.y + 0.42) * cellPercent}%`,
+            width: `${0.16 * cellPercent}%`,
+            height: `${0.16 * cellPercent}%`
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function getSnakeSegmentConnections(snake: SnakeCell[], segmentIndex: number): SnakeDirection[] {
-  const segment = snake[segmentIndex];
-  const connections: SnakeDirection[] = [];
-  const previous = snake[segmentIndex - 1];
-  const next = snake[segmentIndex + 1];
-  const previousDirection = previous ? getAdjacentSnakeDirection(segment, previous) : null;
-  const nextDirection = next ? getAdjacentSnakeDirection(segment, next) : null;
-
-  if (previousDirection) {
-    connections.push(previousDirection);
-  }
-  if (nextDirection && nextDirection !== previousDirection) {
-    connections.push(nextDirection);
-  }
-
-  return connections;
-}
-
-function getAdjacentSnakeDirection(from: SnakeCell, to: SnakeCell): SnakeDirection | null {
-  if (to.x === from.x && to.y === from.y - 1) {
-    return "up";
-  }
-  if (to.x === from.x + 1 && to.y === from.y) {
-    return "right";
-  }
-  if (to.x === from.x && to.y === from.y + 1) {
-    return "down";
-  }
-  if (to.x === from.x - 1 && to.y === from.y) {
-    return "left";
-  }
-  return null;
-}
-
-const SNAKE_TRACK_INSET = "21%";
-const SNAKE_TRACK_SIZE = "58%";
-const SNAKE_HEAD_INSET = "7%";
-const SNAKE_HEAD_SIZE = "86%";
-
-function getSnakeConnectorStyle(direction: SnakeDirection, color: string): CSSProperties {
-  const base = {
-    backgroundColor: color
-  };
-  if (direction === "up") {
-    return { ...base, left: SNAKE_TRACK_INSET, top: "-2px", width: SNAKE_TRACK_SIZE, height: "calc(50% + 2px)" };
-  }
-  if (direction === "right") {
-    return { ...base, left: "50%", top: SNAKE_TRACK_INSET, width: "calc(50% + 2px)", height: SNAKE_TRACK_SIZE };
-  }
-  if (direction === "down") {
-    return { ...base, left: SNAKE_TRACK_INSET, top: "50%", width: SNAKE_TRACK_SIZE, height: "calc(50% + 2px)" };
-  }
-  return { ...base, left: "-2px", top: SNAKE_TRACK_INSET, width: "calc(50% + 2px)", height: SNAKE_TRACK_SIZE };
-}
-
-function getSnakeElbowStyle(color: string): CSSProperties {
-  return {
-    backgroundColor: color,
-    left: SNAKE_TRACK_INSET,
-    top: SNAKE_TRACK_INSET,
-    width: SNAKE_TRACK_SIZE,
-    height: SNAKE_TRACK_SIZE
-  };
-}
-
-function getSnakeStraightStyle(axis: "horizontal" | "vertical", color: string): CSSProperties {
-  if (axis === "horizontal") {
-    return {
-      backgroundColor: color,
-      left: "-2px",
-      top: SNAKE_TRACK_INSET,
-      width: "calc(100% + 4px)",
-      height: SNAKE_TRACK_SIZE
-    };
-  }
-  return {
-    backgroundColor: color,
-    left: SNAKE_TRACK_INSET,
-    top: "-2px",
-    width: SNAKE_TRACK_SIZE,
-    height: "calc(100% + 4px)"
-  };
-}
-
-function getSnakeEndpointRectStyle(directionToBody: SnakeDirection, color: string): CSSProperties {
-  if (directionToBody === "left") {
-    return { backgroundColor: color, left: "-2px", top: SNAKE_TRACK_INSET, width: "calc(52% + 2px)", height: SNAKE_TRACK_SIZE };
-  }
-  if (directionToBody === "right") {
-    return { backgroundColor: color, left: "48%", top: SNAKE_TRACK_INSET, width: "calc(52% + 2px)", height: SNAKE_TRACK_SIZE };
-  }
-  if (directionToBody === "up") {
-    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: "-2px", width: SNAKE_TRACK_SIZE, height: "calc(52% + 2px)" };
-  }
-  return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: "48%", width: SNAKE_TRACK_SIZE, height: "calc(52% + 2px)" };
-}
-
-function getSnakeEndpointCapStyle(directionToBody: SnakeDirection, color: string): CSSProperties {
-  if (directionToBody === "left") {
-    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
-  }
-  if (directionToBody === "right") {
-    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
-  }
-  if (directionToBody === "up") {
-    return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
-  }
-  return { backgroundColor: color, left: SNAKE_TRACK_INSET, top: SNAKE_TRACK_INSET, width: SNAKE_TRACK_SIZE, height: SNAKE_TRACK_SIZE };
-}
-
-function getSnakeHeadAvatarStyle(): CSSProperties {
-  return {
-    left: SNAKE_HEAD_INSET,
-    top: SNAKE_HEAD_INSET,
-    width: SNAKE_HEAD_SIZE,
-    height: SNAKE_HEAD_SIZE
-  };
-}
-
-function getSnakeEyeStyle(directionToBody: SnakeDirection): CSSProperties {
-  if (directionToBody === "left") {
-    return { left: "62%", top: "50%", transform: "translate(-50%, -50%)" };
-  }
-  if (directionToBody === "right") {
-    return { left: "38%", top: "50%", transform: "translate(-50%, -50%)" };
-  }
-  if (directionToBody === "up") {
-    return { left: "50%", top: "62%", transform: "translate(-50%, -50%)" };
-  }
-  return { left: "50%", top: "38%", transform: "translate(-50%, -50%)" };
+function sameSnakePointList(left: readonly SnakePoint[], right: readonly SnakePoint[]) {
+  return left.length === right.length && left.every((point, index) => point.x === right[index]?.x && point.y === right[index]?.y);
 }
 
 function normalizeSnakePhrase(value: string) {
@@ -3856,7 +4255,7 @@ function createSnakeGameState(word: string, boardSize: number): SnakeGameState {
   const snake = createInitialSnake(boardSize);
   return {
     snake,
-    direction: "right",
+    direction: "down",
     targets: createLetterTargets(word, 0, boardSize, snake),
     progress: 0,
     score: 0,
@@ -3869,8 +4268,8 @@ function createInitialSnake(boardSize: number): SnakeCell[] {
   const center = Math.floor(boardSize / 2);
   return [
     { x: center, y: center },
-    { x: center - 1, y: center },
-    { x: center - 2, y: center }
+    { x: center, y: center - 1 },
+    { x: center, y: center - 2 }
   ];
 }
 
@@ -3884,7 +4283,7 @@ function advanceSnakeGame(
     return state;
   }
 
-  const direction = isOppositeSnakeDirection(state.direction, pendingDirection) ? state.direction : pendingDirection;
+  const direction = resolveSnakeExecutionDirection(state.direction, pendingDirection);
   const vector = SNAKE_DIRECTIONS[direction];
   const nextHead = {
     x: state.snake[0].x + vector.x,
@@ -3951,7 +4350,7 @@ function createLetterTargets(word: string, progress: number, boardSize: number, 
 
   const blockedCells = new Set(snake.map(snakeCellKey));
   const targets: LetterTarget[] = [];
-  const requiredCount = Math.min(4, Math.max(2, Math.ceil(word.length / 12)));
+  const { requiredCount, decoyCount } = getSnakeTargetCounts(boardSize);
   for (let index = 0; index < requiredCount; index += 1) {
     const requiredCell = getRandomFreeSnakeCell(boardSize, blockedCells);
     blockedCells.add(snakeCellKey(requiredCell));
@@ -3963,7 +4362,6 @@ function createLetterTargets(word: string, progress: number, boardSize: number, 
     });
   }
 
-  const decoyCount = Math.min(8, Math.max(4, Math.ceil(word.length / 4)));
   for (let index = 0; index < decoyCount; index += 1) {
     const cell = getRandomFreeSnakeCell(boardSize, blockedCells);
     blockedCells.add(snakeCellKey(cell));
@@ -3976,6 +4374,15 @@ function createLetterTargets(word: string, progress: number, boardSize: number, 
   }
 
   return targets;
+}
+
+function getSnakeTargetCounts(boardSize: number) {
+  const totalCount = Math.round(clamp((boardSize * boardSize) / 34, 8, 28));
+  const requiredCount = Math.round(clamp(boardSize / 5, 3, 7));
+  return {
+    requiredCount,
+    decoyCount: Math.max(0, totalCount - requiredCount)
+  };
 }
 
 function getRandomFreeSnakeCell(boardSize: number, blockedCells: Set<string>): SnakeCell {
@@ -4028,15 +4435,6 @@ function snakeCellKey(cell: SnakeCell) {
 
 function isOutsideSnakeBoard(cell: SnakeCell, boardSize: number) {
   return cell.x < 0 || cell.y < 0 || cell.x >= boardSize || cell.y >= boardSize;
-}
-
-function isOppositeSnakeDirection(currentDirection: SnakeDirection, nextDirection: SnakeDirection) {
-  return (
-    (currentDirection === "up" && nextDirection === "down") ||
-    (currentDirection === "down" && nextDirection === "up") ||
-    (currentDirection === "left" && nextDirection === "right") ||
-    (currentDirection === "right" && nextDirection === "left")
-  );
 }
 
 function formatSnakeStatus(status: SnakeStatus) {

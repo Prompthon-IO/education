@@ -1,5 +1,5 @@
 import { type CSSProperties, type ChangeEvent, type MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
-import { Bomb, Camera, CameraOff, CircleDollarSign, Clock3, Coins, Gamepad2, Heart, Maximize2, Medal, Minimize2, MoveHorizontal, Music, Pause, Play, RotateCcw, ScanFace, ShieldAlert, Sparkles, Target, Trophy, Upload } from "lucide-react";
+import { AudioLines, Bomb, Camera, CameraOff, CircleDollarSign, Clock3, Coins, Gamepad2, Heart, Maximize2, Medal, Minimize2, MoveHorizontal, Music, Pause, Play, RotateCcw, ScanFace, ShieldAlert, Sparkles, Target, Trophy, Upload } from "lucide-react";
 import type { FaceLandmarker, NormalizedLandmark, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import {
+  AudioCaptureService,
+  VoiceDiagnosticsSheet,
+  type AudioFoundationSnapshot,
+  type AudioInputDevice,
+  type VoicePipelineMode
+} from "./audio";
 import prompthonSquareDarkLogo from "./assets/prompthon-square-dark.png";
+import stellarDanceArmsCrossedIcon from "./assets/stellar-dance-arms-crossed-icon.png";
 import {
   type AvatarExpression,
   type AvatarFrame,
@@ -26,6 +34,7 @@ import {
   VOICE_FLAPPY_GROUND_HEIGHT,
   VOICE_FLAPPY_PIPE_WIDTH,
   buildWordSnakeLeaderboardEntry,
+  createFaceRhythmDeck,
   coinCatchItemHitsAvatar,
   createLeaderboardStore,
   createMemoryMatchDeck,
@@ -39,6 +48,7 @@ import {
   nextSimonSequence,
   rankFaceExpressions,
   resolveCoinCatchItem,
+  scoreMemoryMatchPair,
   scoreWhackHit,
   stepCoinCatchMotion,
   stepVoiceFlappyRound
@@ -102,6 +112,11 @@ const ARCADE_CONFIG = {
   leaderboardStorageKey: import.meta.env.VITE_ARCADE_LEADERBOARD_STORAGE_KEY || "prompthon-avatar-arcade-leaderboard-v1",
   defaultPlayerName: import.meta.env.VITE_ARCADE_DEFAULT_PLAYER_NAME || "Player",
   voiceEnabled: import.meta.env.VITE_ARCADE_ENABLE_VOICE !== "false",
+  voicePipelineMode: parseVoicePipelineMode(import.meta.env.VITE_ARCADE_VOICE_PIPELINE_MODE),
+  voiceDiagnosticsEnabled: import.meta.env.DEV
+    ? import.meta.env.VITE_ARCADE_VOICE_DIAGNOSTICS !== "false"
+    : import.meta.env.VITE_ARCADE_VOICE_DIAGNOSTICS === "true",
+  voiceModelBaseUrl: import.meta.env.VITE_ARCADE_VOICE_MODEL_BASE_URL || "",
   faceEnabled: import.meta.env.VITE_ARCADE_ENABLE_FACE !== "false",
   faceModelUrl: import.meta.env.VITE_ARCADE_FACE_MODEL_URL || ""
 };
@@ -136,27 +151,53 @@ const FACE_LANDMARKER_MODEL_URL = ARCADE_CONFIG.faceModelUrl
 const FACE_RHYTHM_SAMPLE_INTERVAL_MS = 70;
 const FACE_RHYTHM_SAMPLE_WINDOW_SIZE = 5;
 const FACE_RHYTHM_MIN_CONSENSUS = 3;
+const FACE_RHYTHM_TARGET_BASE_STEP = 1.25;
+const FACE_RHYTHM_TARGET_LEVEL_STEP = 0.25;
 const VOICE_FLAPPY_NOISE_GATE_DEFAULT = 0.2;
+const EMPTY_AUDIO_FOUNDATION_SNAPSHOT: AudioFoundationSnapshot = {
+  status: "idle",
+  settings: null,
+  diagnostics: null,
+  noiseProfile: null,
+  warnings: [],
+  error: null
+};
 const FACE_RHYTHM_POSE_LABELS: Record<FaceRhythmExpression, string> = {
   happy: "Neutral",
   playful: "Tongue out",
   sleepy: "Eyes closed",
-  excited: "Big laugh"
+  excited: "Big laugh",
+  sad: "Frown",
+  dizzy: "Wink"
 };
 const MEMORY_EXPRESSIONS: AvatarExpression[] = ["happy", "excited", "sad", "dizzy", "playful", "sleepy", "angry", "surprised"];
 const MEMORY_MATCH_DURATION_SECONDS = 120;
 const WHACK_EXPRESSIONS: AvatarExpression[] = ["happy", "excited", "sad", "dizzy", "playful", "sleepy"];
-const WHACK_DURATION_SECONDS = 45;
+const WHACK_DURATION_SECONDS = 75;
+const WHACK_LEVEL_DURATION_SECONDS = 15;
+const WHACK_LEVEL_COUNT = 5;
+const WHACK_LEVEL_ONE_POPUP_MS = { base: 368000, min: 304000 } as const;
+const WHACK_LEVEL_SPEED_BOOST = 1.15;
+const WHACK_LEVEL_EXPRESSIONS: readonly AvatarExpression[][] = [
+  ["happy", "excited", "sad"],
+  ["happy", "excited", "sad", "sleepy"],
+  ["happy", "excited", "sad", "sleepy", "dizzy"],
+  ["happy", "excited", "sad", "sleepy", "dizzy", "scared"],
+  ["happy", "excited", "sad", "sleepy", "dizzy", "scared", "angry", "playful"]
+] as const;
+const WHACK_LEVEL_BREAK_SECONDS = 5;
+type WhackMode = "levels" | "endless";
 type PoseCameraStatus = "off" | "loading" | "ready" | "blocked" | "error";
+type VisionTrackerStatus = "idle" | "loading" | "ready" | "error";
 const POSE_LANDMARKER_WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
 const POSE_LANDMARKER_MODEL_URL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
-const COIN_CATCH_POSE_INTERVAL_MS = 70;
+const COIN_CATCH_POSE_INTERVAL_MS = 15;
 const COIN_CATCH_INITIAL_MOTION: CoinCatchMotion = { x: 0.5, velocity: 0 };
 const COIN_CATCH_VALUES = [1, 3, 5] as const;
-const COIN_CATCH_ARM_LANDMARK_INDEXES = [13, 14, 15, 16];
-const COIN_CATCH_ARM_DIRECTION_DEADZONE = 0.12;
-const COIN_CATCH_ARM_DIRECTION_FULL_SPEED = 0.7;
-const COIN_CATCH_ARM_RUN_FULL_SPEED = 0.85;
+const COIN_CATCH_TORSO_LANDMARK_INDEXES = [11, 12, 23, 24];
+const COIN_CATCH_TORSO_DIRECTION_DEADZONE = 0.035;
+const COIN_CATCH_TORSO_DIRECTION_FULL_SPEED = 0.16;
+const COIN_CATCH_TORSO_RUN_FULL_SPEED = 0.42;
 type CoinCatchValue = (typeof COIN_CATCH_VALUES)[number];
 type CoinCatchItem = {
   id: number;
@@ -183,6 +224,23 @@ function clampArcadeValue(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function parseVoicePipelineMode(value: string | undefined): VoicePipelineMode {
+  return value === "foundation" || value === "personalized" ? value : "legacy";
+}
+
+function getVoiceFlappyIdleLabel(testMode: boolean, pipelineMode: VoicePipelineMode) {
+  if (testMode) {
+    return "Test voice input";
+  }
+  if (pipelineMode === "foundation") {
+    return ARCADE_CONFIG.voiceEnabled ? "Audio foundation on play" : "Space fallback";
+  }
+  if (pipelineMode === "personalized") {
+    return "Enrollment pending - Space fallback";
+  }
+  return ARCADE_CONFIG.voiceEnabled ? "Mic on play" : "Space fallback";
+}
+
 export function isArcadeGameId(value: string): value is ArcadeGameId {
   return ARCADE_GAME_CONFIGS.some((game) => game.id === value);
 }
@@ -190,10 +248,12 @@ export function isArcadeGameId(value: string): value is ArcadeGameId {
 export function ArcadeGame({
   gameId,
   avatarAsset,
+  playerId = "default-player",
   playerName = ARCADE_CONFIG.defaultPlayerName
 }: {
   gameId: ArcadeGameId;
   avatarAsset: ArcadeAvatarAsset | null;
+  playerId?: string;
   playerName?: string;
 }) {
   const manifest = useArcadeAvatarManifest();
@@ -204,7 +264,7 @@ export function ArcadeGame({
   };
 
   if (gameId === "voice-flappy") {
-    return <VoiceFlappyGame avatarAsset={asset} manifest={manifest} playerName={playerName} />;
+    return <VoiceFlappyGame avatarAsset={asset} manifest={manifest} playerId={playerId} playerName={playerName} />;
   }
   if (gameId === "face-rhythm") {
     return <FaceRhythmGame avatarAsset={asset} manifest={manifest} playerName={playerName} />;
@@ -230,7 +290,8 @@ export function AvatarSprite({
   expression,
   className,
   style,
-  label
+  label,
+  showExpressionOverlay = false
 }: {
   asset: ArcadeAvatarAsset;
   manifest: AvatarManifest;
@@ -238,6 +299,7 @@ export function AvatarSprite({
   className?: string;
   style?: CSSProperties;
   label?: string;
+  showExpressionOverlay?: boolean;
 }) {
   const activeManifest = asset.spriteSheet ? spriteSheetToAvatarManifest(asset.spriteSheet) : manifest;
   const frame = getAvatarFrame(activeManifest, expression);
@@ -266,7 +328,31 @@ export function AvatarSprite({
       data-frame-height={frame?.height}
     >
       <img src={imageUrl} alt="" className="absolute left-0 top-0 max-w-none object-contain" style={imageStyle} draggable={false} />
+      {showExpressionOverlay ? <AvatarExpressionOverlay expression={expression} /> : null}
       {!frame ? <span className="place-self-center text-lg font-black uppercase">{expression.slice(0, 2)}</span> : null}
+    </span>
+  );
+}
+
+function AvatarExpressionOverlay({ expression }: { expression: AvatarExpression }) {
+  const isHappy = expression === "happy" || expression === "excited" || expression === "playful";
+  const isAngry = expression === "angry";
+  const isSad = expression === "sad" || expression === "sleepy" || expression === "scared";
+  const isSurprised = expression === "surprised" || expression === "dizzy";
+
+  return (
+    <span className="pointer-events-none absolute inset-0 z-20 rounded-full" aria-hidden="true">
+      {isAngry ? <span className="absolute inset-0 rounded-full bg-pink-300/35 mix-blend-multiply" /> : null}
+      <span
+        className={cn(
+          "absolute inset-1 rounded-full border-[0.22em] shadow-[inset_0_0_0.8em_rgba(255,255,255,0.22)]",
+          isAngry && "border-pink-500/85",
+          isHappy && "border-amber-400/80",
+          isSurprised && "border-sky-400/80",
+          isSad && "border-blue-400/75",
+          !isAngry && !isHappy && !isSurprised && !isSad && "border-white/0"
+        )}
+      />
     </span>
   );
 }
@@ -325,11 +411,13 @@ function GameShell({
   const isRunning = status === "running";
   const isMemoryMatch = id === "memory-match";
   const [showScoreFeedback, setShowScoreFeedback] = useState(false);
+  const [scoreFeedbackDelta, setScoreFeedbackDelta] = useState(0);
   const [showFinalScreen, setShowFinalScreen] = useState(false);
   const previousScoreRef = useRef(score);
 
   useEffect(() => {
     if (isMemoryMatch && score > previousScoreRef.current) {
+      setScoreFeedbackDelta(score - previousScoreRef.current);
       setShowScoreFeedback(true);
       const feedbackTimeout = window.setTimeout(() => setShowScoreFeedback(false), 700);
       previousScoreRef.current = score;
@@ -385,7 +473,7 @@ function GameShell({
                     <Trophy className="size-5 text-primary" />
                     {score}
                     {showScoreFeedback ? (
-                      <span className="absolute -top-5 right-0 text-xs font-black text-emerald-600" aria-live="polite">+1</span>
+                      <span className="absolute -top-5 right-0 text-xs font-black text-emerald-600" aria-live="polite">+{scoreFeedbackDelta}</span>
                     ) : null}
                   </div>
                 </CardContent>
@@ -463,14 +551,15 @@ export function GameStartOverlay({ onStart, disabled = false, className }: { onS
   );
 }
 
-function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
+function VoiceFlappyGame({ avatarAsset, manifest, playerId, playerName }: GameProps & { playerId: string }) {
   const config = getGameConfig("voice-flappy");
   const testMode = useMemo(() => import.meta.env.DEV && new URLSearchParams(window.location.search).get("voiceTest") === "1", []);
+  const pipelineMode = ARCADE_CONFIG.voicePipelineMode;
   const initialWorld = useMemo<VoiceFlappyWorld>(() => ({ width: 640, height: 520 }), []);
   const [runId, setRunId] = useState(0);
   const [world, setWorld] = useState(initialWorld);
   const [round, setRound] = useState(() => createVoiceFlappyRound(initialWorld));
-  const [sensorLabel, setSensorLabel] = useState(testMode ? "Test voice input" : ARCADE_CONFIG.voiceEnabled ? "Mic on play" : "Space fallback");
+  const [sensorLabel, setSensorLabel] = useState(() => getVoiceFlappyIdleLabel(testMode, pipelineMode));
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [backgroundNoiseLevel, setBackgroundNoiseLevel] = useState(0);
   const [noiseGateLevel, setNoiseGateLevel] = useState(VOICE_FLAPPY_NOISE_GATE_DEFAULT);
@@ -479,6 +568,10 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
   const [endedAt, setEndedAt] = useState(0);
   const [testerMode, setTesterMode] = useState<"manual" | "auto">("manual");
   const [simulatedVoiceLevel, setSimulatedVoiceLevel] = useState(0);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [audioSnapshot, setAudioSnapshot] = useState<AudioFoundationSnapshot>(() => ({ ...EMPTY_AUDIO_FOUNDATION_SNAPSHOT }));
+  const [audioInputDevices, setAudioInputDevices] = useState<AudioInputDevice[]>([]);
+  const [selectedAudioInputId, setSelectedAudioInputId] = useState("");
   const playfieldRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef(initialWorld);
   const roundRef = useRef(round);
@@ -490,10 +583,105 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
   const volumeRef = useRef(0);
   const noiseGateRef = useRef(VOICE_FLAPPY_NOISE_GATE_DEFAULT);
   const audioCleanupRef = useRef<(() => void) | null>(null);
+  const foundationServiceRef = useRef<AudioCaptureService | null>(null);
+  const foundationUnsubscribeRef = useRef<(() => void) | null>(null);
 
   function updateRound(nextRound: typeof round) {
     roundRef.current = nextRound;
     setRound(nextRound);
+  }
+
+  function getFoundationService() {
+    if (foundationServiceRef.current) {
+      return foundationServiceRef.current;
+    }
+    const service = new AudioCaptureService();
+    foundationServiceRef.current = service;
+    foundationUnsubscribeRef.current = service.subscribe(setAudioSnapshot);
+    return service;
+  }
+
+  async function refreshAudioInputDevices(service = getFoundationService()) {
+    try {
+      setAudioInputDevices(await service.listInputDevices());
+    } catch {
+      setAudioInputDevices([]);
+    }
+  }
+
+  async function startFoundationCapture(autoCalibrate: boolean, requestToken?: number) {
+    const isCurrentRequest = () => requestToken === undefined || requestToken === startTokenRef.current;
+    if (!ARCADE_CONFIG.voiceEnabled || !navigator.mediaDevices?.getUserMedia) {
+      if (isCurrentRequest()) {
+        setSensorLabel("Space fallback");
+      }
+      return false;
+    }
+
+    audioCleanupRef.current?.();
+    audioCleanupRef.current = null;
+    try {
+      setSensorLabel("Requesting microphone");
+      const service = getFoundationService();
+      const snapshot = await service.start({ deviceId: selectedAudioInputId || undefined });
+      if (!isCurrentRequest()) {
+        await service.stop();
+        return false;
+      }
+      void refreshAudioInputDevices(service);
+      if (snapshot.settings?.deviceId && selectedAudioInputId) {
+        setSelectedAudioInputId(snapshot.settings.deviceId);
+      }
+      if (autoCalibrate) {
+        setSensorLabel("Quiet calibration - 3 seconds");
+        await service.calibrateNoise();
+        if (!isCurrentRequest()) {
+          await service.stop();
+          return false;
+        }
+      }
+      setSensorLabel(autoCalibrate ? "Foundation ready - Space to flap" : "Diagnostics ready");
+      return true;
+    } catch {
+      if (isCurrentRequest()) {
+        setSensorLabel("Microphone unavailable - Space fallback");
+      }
+      return false;
+    }
+  }
+
+  function startFoundationDiagnostics() {
+    if (roundRef.current.status === "running") {
+      return;
+    }
+    void startFoundationCapture(false);
+  }
+
+  function calibrateFoundationNoise() {
+    const service = foundationServiceRef.current;
+    if (!service) {
+      return;
+    }
+    setSensorLabel("Quiet calibration - 3 seconds");
+    void service.calibrateNoise()
+      .then(() => setSensorLabel("Noise profile ready"))
+      .catch(() => setSensorLabel("Calibration cancelled"));
+  }
+
+  function runSyntheticAudioDiagnostic() {
+    if (roundRef.current.status === "running") {
+      return;
+    }
+    audioCleanupRef.current?.();
+    audioCleanupRef.current = null;
+    void getFoundationService().runSyntheticDiagnostic()
+      .then(() => setSensorLabel("Synthetic diagnostics ready"))
+      .catch(() => setSensorLabel("Synthetic diagnostics failed"));
+  }
+
+  function stopFoundationDiagnostics() {
+    void foundationServiceRef.current?.stop();
+    setSensorLabel(getVoiceFlappyIdleLabel(testMode, pipelineMode));
   }
 
   function restart() {
@@ -501,12 +689,13 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
     startPendingRef.current = false;
     audioCleanupRef.current?.();
     audioCleanupRef.current = null;
+    void foundationServiceRef.current?.stop();
     setRunId((value) => value + 1);
     updateRound(createVoiceFlappyRound(worldRef.current));
     setExpression("neutral");
     setStartedAt(0);
     setEndedAt(0);
-    setSensorLabel(testMode ? "Test voice input" : ARCADE_CONFIG.voiceEnabled ? "Mic on play" : "Space fallback");
+    setSensorLabel(getVoiceFlappyIdleLabel(testMode, pipelineMode));
     setVoiceLevel(0);
     setBackgroundNoiseLevel(0);
     flapQueuedRef.current = false;
@@ -538,11 +727,29 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
       beginRound();
       return;
     }
+    if (pipelineMode === "personalized") {
+      setSensorLabel(playerId === "default-player"
+        ? "Registered player required - Space fallback"
+        : "Enrollment pending - Space fallback");
+      beginRound();
+      return;
+    }
     startPendingRef.current = true;
     const requestToken = startTokenRef.current + 1;
     startTokenRef.current = requestToken;
+    if (pipelineMode === "foundation") {
+      void startFoundationCapture(true, requestToken).finally(() => {
+        if (requestToken !== startTokenRef.current) {
+          return;
+        }
+        startPendingRef.current = false;
+        beginRound();
+      });
+      return;
+    }
+    void foundationServiceRef.current?.stop();
     setSensorLabel("Starting mic");
-    void startVoiceInput(setSensorLabel, volumeRef, noiseGateRef, setVoiceLevel, setBackgroundNoiseLevel, audioCleanupRef).finally(() => {
+    void startLegacyVoiceInput(setSensorLabel, volumeRef, noiseGateRef, setVoiceLevel, setBackgroundNoiseLevel, audioCleanupRef).finally(() => {
       if (requestToken !== startTokenRef.current) {
         return;
       }
@@ -568,7 +775,13 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [testMode]);
+  }, [pipelineMode, playerId, selectedAudioInputId, testMode]);
+
+  useEffect(() => {
+    if (diagnosticsOpen) {
+      void refreshAudioInputDevices();
+    }
+  }, [diagnosticsOpen]);
 
   useEffect(() => {
     const playfield = playfieldRef.current;
@@ -602,6 +815,11 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
     startPendingRef.current = false;
     audioCleanupRef.current?.();
     audioCleanupRef.current = null;
+    foundationUnsubscribeRef.current?.();
+    foundationUnsubscribeRef.current = null;
+    const foundationService = foundationServiceRef.current;
+    foundationServiceRef.current = null;
+    void foundationService?.stop();
   }, []);
 
   useEffect(() => {
@@ -620,7 +838,9 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
         ? testerModeRef.current === "auto"
           ? getVoiceFlappyRecommendedLevel(currentRound, currentWorld)
           : simulatedVoiceRef.current
-        : volumeRef.current;
+        : pipelineMode === "legacy"
+          ? volumeRef.current
+          : 0;
       const nextRound = stepVoiceFlappyRound(currentRound, {
         deltaSeconds: (currentTime - previousTime) / 1000,
         voiceLevel: activeVoiceLevel,
@@ -638,6 +858,7 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
         setEndedAt(currentTime);
         audioCleanupRef.current?.();
         audioCleanupRef.current = null;
+        void foundationServiceRef.current?.stop();
         return;
       }
       if (nextRound.score > currentRound.score) {
@@ -653,7 +874,7 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
     };
     frameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameId);
-  }, [round.status, testMode]);
+  }, [pipelineMode, round.status, testMode]);
 
   const finalEntry = round.status === "ended" && !testMode
     ? makeEntry("voice-flappy", playerName, round.score, startedAt, endedAt, round.score)
@@ -669,10 +890,29 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
         data-status={round.status}
         data-score={round.score}
         data-distance={round.distance.toFixed(2)}
+        data-player-id={playerId}
+        data-voice-pipeline-mode={pipelineMode}
         className="relative h-full min-h-[420px] overflow-hidden rounded-lg border-2 border-[#07111f] bg-[#dff6ff]"
         onPointerDown={() => { if (roundRef.current.status !== "running") start(); flap(); }}
       >
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#dff6ff_0%,#f7fdff_64%,#d8f3dc_100%)]" />
+        {ARCADE_CONFIG.voiceDiagnosticsEnabled && !diagnosticsOpen ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            className="absolute left-3 top-3 z-[60] border-2 border-[#07111f] bg-white/90 shadow-sm"
+            aria-label="Voice diagnostics"
+            title="Voice diagnostics"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              setDiagnosticsOpen(true);
+            }}
+          >
+            <AudioLines />
+          </Button>
+        ) : null}
         <VoiceFlappyScenery distance={round.distance} worldWidth={world.width} />
         {round.pipes.map((pipe) => (
           <div
@@ -693,7 +933,9 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
             </div>
           </div>
         ))}
-        <VoiceLevelBar level={voiceLevel} targetLevel={targetVoiceLevel} noiseGateLevel={noiseGateLevel} backgroundNoiseLevel={backgroundNoiseLevel} />
+        {testMode || pipelineMode === "legacy" ? (
+          <VoiceLevelBar level={voiceLevel} targetLevel={targetVoiceLevel} noiseGateLevel={noiseGateLevel} backgroundNoiseLevel={backgroundNoiseLevel} />
+        ) : null}
         <div
           data-testid="voice-flappy-bird"
           data-y={round.birdY.toFixed(2)}
@@ -708,15 +950,17 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
           <VoiceFlappyWings active={round.status === "running" && voiceLevel > 0.04} voiceLevel={voiceLevel} />
           <AvatarSprite asset={avatarAsset} manifest={manifest} expression={expression} className="relative z-10 size-14" />
         </div>
-        <VoiceNoiseGateControl
-          value={noiseGateLevel}
-          backgroundNoiseLevel={backgroundNoiseLevel}
-          disabled={testMode}
-          onChange={(nextValue) => {
-            noiseGateRef.current = nextValue;
-            setNoiseGateLevel(nextValue);
-          }}
-        />
+        {testMode || pipelineMode === "legacy" ? (
+          <VoiceNoiseGateControl
+            value={noiseGateLevel}
+            backgroundNoiseLevel={backgroundNoiseLevel}
+            disabled={testMode}
+            onChange={(nextValue) => {
+              noiseGateRef.current = nextValue;
+              setNoiseGateLevel(nextValue);
+            }}
+          />
+        ) : null}
         <div
           data-testid="voice-flappy-ground"
           className="absolute bottom-0 left-0 right-0 z-20 border-t-2 border-[#07111f] bg-[#ffd66b]"
@@ -749,6 +993,23 @@ function VoiceFlappyGame({ avatarAsset, manifest, playerName }: GameProps) {
           />
         ) : null}
       </div>
+      <VoiceDiagnosticsSheet
+        open={diagnosticsOpen}
+        onOpenChange={setDiagnosticsOpen}
+        pipelineMode={pipelineMode}
+        playerId={playerId}
+        playerName={playerName}
+        modelBaseUrl={ARCADE_CONFIG.voiceModelBaseUrl}
+        snapshot={audioSnapshot}
+        devices={audioInputDevices}
+        selectedDeviceId={selectedAudioInputId}
+        captureControlsDisabled={round.status === "running"}
+        onSelectedDeviceChange={setSelectedAudioInputId}
+        onStart={startFoundationDiagnostics}
+        onStop={stopFoundationDiagnostics}
+        onCalibrate={calibrateFoundationNoise}
+        onSynthetic={runSyntheticAudioDiagnostic}
+      />
     </GameShell>
   );
 }
@@ -801,7 +1062,8 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
   const [hits, setHits] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [remaining, setRemaining] = useState(45);
-  const [target, setTarget] = useState(() => createRhythmTarget(0));
+  const targetDeckRef = useRef(createFaceRhythmDeck(64));
+  const [target, setTarget] = useState(() => createRhythmTarget(0, targetDeckRef.current));
   const [expression, setExpression] = useState<AvatarExpression>("neutral");
   const [detectedExpression, setDetectedExpression] = useState<FaceRhythmExpression>("happy");
   const [faceConfidence, setFaceConfidence] = useState(0);
@@ -809,6 +1071,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
   const [facePresent, setFacePresent] = useState(false);
   const [landmarkCount, setLandmarkCount] = useState(0);
   const [cameraStatus, setCameraStatus] = useState<FaceCameraStatus>("off");
+  const [trackerStatus, setTrackerStatus] = useState<VisionTrackerStatus>("idle");
   const [sensorLabel, setSensorLabel] = useState(ARCADE_CONFIG.faceEnabled ? "Camera on play" : "Camera unavailable");
   const [startedAt, setStartedAt] = useState(0);
   const [endedAt, setEndedAt] = useState(0);
@@ -831,7 +1094,8 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
     setHits(0);
     setAttempts(0);
     setRemaining(45);
-    setTarget(createRhythmTarget(0));
+    targetDeckRef.current = createFaceRhythmDeck(64);
+    setTarget(createRhythmTarget(0, targetDeckRef.current));
     setExpression("neutral");
     setDetectedExpression("happy");
     detectedExpressionRef.current = "happy";
@@ -846,7 +1110,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
   function start() {
     setStatus("running");
     setStartedAt((value) => value || performance.now());
-    if (ARCADE_CONFIG.faceEnabled && cameraStatus !== "ready" && cameraStatus !== "loading") {
+    if (ARCADE_CONFIG.faceEnabled && cameraStatus !== "loading" && trackerStatus !== "loading" && (cameraStatus !== "ready" || trackerStatus !== "ready")) {
       void startFaceCamera();
     }
   }
@@ -867,7 +1131,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
       setScore((value) => value + 1);
       setHits((value) => value + 1);
       setCombo((value) => value + 1);
-      setTarget(createRhythmTarget(currentTarget.id + 1));
+      setTarget(createRhythmTarget(currentTarget.id + 1, targetDeckRef.current));
     } else {
       setCombo(0);
     }
@@ -879,7 +1143,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
       setSensorLabel("Camera unavailable");
       return;
     }
-    if (cameraStatus === "loading" || cameraStatus === "ready") {
+    if (cameraStatus === "loading" || trackerStatus === "loading") {
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -888,25 +1152,46 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
       return;
     }
 
-    setCameraStatus("loading");
-    setSensorLabel("Loading face tracker");
-    try {
-      const [{ FilesetResolver, FaceLandmarker: FaceLandmarkerTask }, stream] = await Promise.all([
-        import("@mediapipe/tasks-vision"),
-        navigator.mediaDevices.getUserMedia({
+    if (!cameraStreamRef.current) {
+      setCameraStatus("loading");
+      setSensorLabel("Starting camera");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
             width: { ideal: 640 },
             height: { ideal: 480 }
           },
           audio: false
-        })
-      ]);
-      cameraStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        });
+        cameraStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setCameraStatus("ready");
+        setSensorLabel("Camera live · Loading face tracker");
+      } catch (error) {
+        const isPermissionError = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
+        stopFaceCamera(isPermissionError ? "blocked" : "error");
+        setSensorLabel(isPermissionError ? "Camera blocked · Allow access and retry" : "Camera unavailable · Check that it is connected");
+        return;
       }
+    }
+
+    if (faceLandmarkerRef.current) {
+      setTrackerStatus("ready");
+      faceSamplesRef.current = [];
+      lastFaceSampleAtRef.current = 0;
+      setSensorLabel("Finding face");
+      runFaceLoop();
+      return;
+    }
+
+    setTrackerStatus("loading");
+    setSensorLabel("Camera live · Loading face tracker");
+    try {
+      const { FilesetResolver, FaceLandmarker: FaceLandmarkerTask } = await import("@mediapipe/tasks-vision");
       if (!faceLandmarkerRef.current) {
         const vision = await FilesetResolver.forVisionTasks(FACE_LANDMARKER_WASM_URL);
         faceLandmarkerRef.current = await FaceLandmarkerTask.createFromOptions(vision, {
@@ -928,12 +1213,12 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
       }
       faceSamplesRef.current = [];
       lastFaceSampleAtRef.current = 0;
-      setCameraStatus("ready");
+      setTrackerStatus("ready");
       setSensorLabel("Finding face");
       runFaceLoop();
     } catch (error) {
-      stopFaceCamera("error");
-      setSensorLabel(error instanceof DOMException && error.name === "NotAllowedError" ? "Camera blocked" : "Camera failed");
+      setTrackerStatus("error");
+      setSensorLabel("Camera live · Face tracking unavailable");
     }
   }
 
@@ -954,6 +1239,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
     setLandmarkCount(0);
     drawFaceRhythmMesh(faceCanvasRef.current, undefined, faceMeshConnectionsRef.current);
     setCameraStatus(nextStatus);
+    setTrackerStatus(faceLandmarkerRef.current ? "ready" : "idle");
     if (nextStatus === "off") {
       setSensorLabel("Camera off");
     }
@@ -1042,7 +1328,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
     }
     const intervalId = window.setInterval(() => {
       setTarget((current) => {
-        const speed = 2.5 + Math.floor(hits / 10) * 0.5;
+        const speed = FACE_RHYTHM_TARGET_BASE_STEP + Math.floor(hits / 10) * FACE_RHYTHM_TARGET_LEVEL_STEP;
         return { ...current, y: current.y + speed };
       });
     }, 80);
@@ -1071,7 +1357,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
     setAttempts((value) => value + 1);
     setCombo(0);
     setExpression(detectedExpressionRef.current);
-    setTarget(createRhythmTarget(target.id + 1));
+    setTarget(createRhythmTarget(target.id + 1, targetDeckRef.current));
   }, [status, target]);
 
   useEffect(() => {
@@ -1157,12 +1443,12 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
             className="absolute left-1/2 z-30 grid -translate-x-1/2 -translate-y-1/2 justify-items-center gap-1 transition-[top] duration-75"
             style={{ top: `${target.y}%` }}
           >
-            <div className="relative grid size-28 place-items-center rounded-md border border-cyan-100/35 bg-white/10 shadow-[0_0_26px_rgba(94,234,212,0.18)] backdrop-blur-sm">
+            <div className="relative grid size-56 place-items-center rounded-md border border-cyan-100/35 bg-white/10 shadow-[0_0_26px_rgba(94,234,212,0.18)] backdrop-blur-sm">
               <span className="absolute left-1 top-1 size-3 border-l-2 border-t-2 border-primary" />
               <span className="absolute right-1 top-1 size-3 border-r-2 border-t-2 border-primary" />
               <span className="absolute bottom-1 left-1 size-3 border-b-2 border-l-2 border-primary" />
               <span className="absolute bottom-1 right-1 size-3 border-b-2 border-r-2 border-primary" />
-              <AvatarSprite asset={avatarAsset} manifest={manifest} expression={target.expression} className="size-24" />
+              <AvatarSprite asset={avatarAsset} manifest={manifest} expression={target.expression} className="size-48" />
             </div>
             <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-black text-white">
               {formatFaceRhythmPose(target.expression)}
@@ -1239,6 +1525,11 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
                 </div>
               </div>
             ) : null}
+            {cameraStatus === "ready" && trackerStatus !== "ready" ? (
+              <div className="absolute left-2 top-9 rounded bg-black/70 px-2 py-1 text-[10px] font-black text-cyan-50 backdrop-blur">
+                {sensorLabel}
+              </div>
+            ) : null}
             <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded bg-black/65 px-2 py-1.5 text-white backdrop-blur">
               <span className="truncate text-[10px] font-black">{facePresent ? formatFaceRhythmPose(detectedExpression) : "Scanning"}</span>
               <span className="font-mono text-[9px] text-cyan-100">{Math.round(faceConfidence * 100)}%</span>
@@ -1254,7 +1545,7 @@ function FaceRhythmGame({ avatarAsset, manifest, playerName }: GameProps) {
           <Button
             type="button"
             variant={cameraStatus === "ready" ? "outline" : "default"}
-            disabled={!ARCADE_CONFIG.faceEnabled || cameraStatus === "loading"}
+            disabled={!ARCADE_CONFIG.faceEnabled || cameraStatus === "loading" || trackerStatus === "loading"}
             onClick={cameraStatus === "ready" ? () => stopFaceCamera() : startFaceCamera}
           >
             {cameraStatus === "ready" ? <CameraOff data-icon="inline-start" /> : <Camera data-icon="inline-start" />}
@@ -1457,7 +1748,7 @@ function MemoryMatchGame({ avatarAsset, manifest, playerName }: GameProps) {
       const [a, b] = nextSelected.map((id) => deck.find((card) => card.id === id));
       if (a && b && getAvatarVisualMatchKey(memoryAvatarManifest, a.expression) === getAvatarVisualMatchKey(memoryAvatarManifest, b.expression)) {
         setMatched((ids) => [...ids, a.id, b.id]);
-        setScore((value) => value + 1);
+        setScore((value) => value + scoreMemoryMatchPair(remaining, MEMORY_MATCH_DURATION_SECONDS));
         setExpression("excited");
         setSelected([]);
       } else {
@@ -1532,6 +1823,7 @@ function MemoryMatchGame({ avatarAsset, manifest, playerName }: GameProps) {
               type="button"
               className="memory-match-card group grid place-self-center rounded-full bg-transparent outline-none transition hover:scale-[1.03] focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:hover:scale-100"
               onClick={() => flip(card.id)}
+              onDragStart={(event) => event.preventDefault()}
               aria-label={`Flip ${card.expression}`}
               data-testid="memory-match-card"
               disabled={status !== "running" || redealPhase !== "idle"}
@@ -1550,7 +1842,7 @@ function MemoryMatchGame({ avatarAsset, manifest, playerName }: GameProps) {
                   style={{ backfaceVisibility: "hidden" }}
                   aria-hidden={visible}
                 >
-                  <img src={prompthonSquareDarkLogo} alt="" className="size-1/2 object-contain" aria-hidden="true" />
+                  <img src={prompthonSquareDarkLogo} alt="" className="size-1/2 object-contain" aria-hidden="true" draggable={false} />
                 </span>
                 <span
                   className="absolute inset-0 block size-full"
@@ -1575,6 +1867,7 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
   const [score, setScore] = useState(0);
   const [remaining, setRemaining] = useState(WHACK_DURATION_SECONDS);
   const [roundSeed, setRoundSeed] = useState(0);
+  const [targetSeed, setTargetSeed] = useState(0);
   const [streak, setStreak] = useState(0);
   const [hits, setHits] = useState(0);
   const [attempts, setAttempts] = useState(0);
@@ -1582,8 +1875,16 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
   const [expression, setExpression] = useState<AvatarExpression>("neutral");
   const [startedAt, setStartedAt] = useState(0);
   const [endedAt, setEndedAt] = useState(0);
-  const target = getWhackTarget(roundSeed);
-  const visible = useMemo(() => createWhackState(roundSeed, target), [roundSeed, target]);
+  const [levelBreakRemaining, setLevelBreakRemaining] = useState(0);
+  const [mode, setMode] = useState<WhackMode | null>(null);
+  const [endlessLevel, setEndlessLevel] = useState(1);
+  const [readyScreen, setReadyScreen] = useState<"welcome" | "mode">("welcome");
+  const [showEndlessLevels, setShowEndlessLevels] = useState(false);
+  const level = mode === "levels" ? getWhackLevel(remaining) : mode === "endless" ? endlessLevel : 1;
+  const expressionPool = getWhackExpressionPool(level);
+  const target = getWhackTarget(targetSeed, expressionPool);
+  const visible = useMemo(() => createWhackState(roundSeed, target, expressionPool), [expressionPool, roundSeed, target]);
+  const isLevelBreak = status === "running" && levelBreakRemaining > 0;
 
   function restart() {
     setRunId((value) => value + 1);
@@ -1591,6 +1892,7 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
     setScore(0);
     setRemaining(WHACK_DURATION_SECONDS);
     setRoundSeed(0);
+    setTargetSeed(0);
     setStreak(0);
     setHits(0);
     setAttempts(0);
@@ -1598,19 +1900,33 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
     setExpression("neutral");
     setStartedAt(0);
     setEndedAt(0);
+    setLevelBreakRemaining(0);
+    setMode(null);
+    setEndlessLevel(1);
+    setReadyScreen("welcome");
+    setShowEndlessLevels(false);
   }
 
-  function start() {
+  function start(nextMode: WhackMode = "levels", nextEndlessLevel = 1) {
+    setMode(nextMode);
+    setEndlessLevel(Math.max(1, Math.min(WHACK_LEVEL_COUNT, nextEndlessLevel)));
+    setShowEndlessLevels(false);
+    setRemaining(nextMode === "levels" ? WHACK_DURATION_SECONDS : 0);
     setStatus("running");
     setStartedAt((value) => value || performance.now());
   }
 
   function hit(index: number) {
-    if (status !== "running") {
+    if (status !== "running" || isLevelBreak) {
       return;
     }
     const visibleExpression = visible[index];
     if (!visibleExpression) {
+      setAttempts((value) => value + 1);
+      setStreak(0);
+      setExpression("sad");
+      setFeedback("wrong");
+      setRoundSeed((value) => value + 1);
       return;
     }
     const result = scoreWhackHit({ visibleExpression, targetExpression: target, currentScore: score });
@@ -1621,12 +1937,14 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
       setStreak((value) => value + 1);
       setExpression("excited");
       setFeedback("correct");
+      setTargetSeed((value) => value + 1);
+      setRoundSeed((value) => value + 1);
     } else {
       setStreak(0);
       setExpression("sad");
       setFeedback("wrong");
+      setRoundSeed((value) => value + 1);
     }
-    setRoundSeed((value) => value + 1);
   }
 
   useEffect(() => {
@@ -1634,25 +1952,42 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
       return;
     }
     const timerId = window.setInterval(() => {
+      if (levelBreakRemaining > 0) {
+        setLevelBreakRemaining((value) => Math.max(0, value - 1));
+        return;
+      }
+      if (mode === "endless") {
+        return;
+      }
       setRemaining((value) => {
         if (value <= 1) {
           setStatus("ended");
           setEndedAt(performance.now());
           return 0;
         }
-        return value - 1;
+        const nextValue = value - 1;
+        if (mode === "levels" && nextValue > 0 && nextValue % WHACK_LEVEL_DURATION_SECONDS === 0) {
+          setLevelBreakRemaining(WHACK_LEVEL_BREAK_SECONDS);
+          setStreak(0);
+          setFeedback("idle");
+        }
+        return nextValue;
       });
     }, 1000);
-    const popupId = window.setInterval(() => {
-      setRoundSeed((value) => value + 1);
-      setStreak(0);
-      setFeedback("idle");
-    }, Math.max(650, 1250 - score * 30));
+    const popupId = levelBreakRemaining > 0
+      ? null
+      : window.setInterval(() => {
+          setRoundSeed((value) => value + 1);
+          setStreak(0);
+          setFeedback("idle");
+        }, getWhackPopupIntervalMs(level));
     return () => {
       window.clearInterval(timerId);
-      window.clearInterval(popupId);
+      if (popupId !== null) {
+        window.clearInterval(popupId);
+      }
     };
-  }, [score, status]);
+  }, [level, levelBreakRemaining, mode, status]);
 
   useEffect(() => {
     if (feedback === "idle") {
@@ -1668,9 +2003,22 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
     : null;
 
   return (
-    <GameShell {...config} status={status} score={score} timerLabel={`${remaining}s`} sensorLabel={`Target ${formatExpression(target)}`} expression={expression} runId={runId} finalEntry={finalEntry} onStart={start} onPause={() => setStatus("paused")} onRestart={restart}>
-      <div className={cn("grid h-full min-h-[420px] grid-rows-[auto_minmax(0,1fr)] gap-3", feedback === "correct" && "bg-emerald-50/70", feedback === "wrong" && "bg-red-50/70")}>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg border-2 border-[#07111f] bg-card px-4 py-3 max-sm:grid-cols-[minmax(0,1fr)_auto]">
+    <GameShell
+      {...config}
+      status={status}
+      score={score}
+      timerLabel={mode === "endless" ? "Endless" : mode === "levels" ? `${remaining}s` : "Choose mode"}
+      sensorLabel={`Target ${formatExpression(target)}`}
+      expression={expression}
+      runId={runId}
+      finalEntry={finalEntry}
+      showStartOverlay={false}
+      onStart={() => start(mode ?? "levels")}
+      onPause={() => setStatus("paused")}
+      onRestart={restart}
+    >
+      <div className={cn("grid h-full min-h-[420px] grid-rows-[auto_minmax(0,1fr)] gap-3 bg-[#fff2f7]", feedback === "correct" && "bg-emerald-50/70", feedback === "wrong" && "bg-red-50/70")}>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg border-2 border-[#07111f] bg-[#ffeaf2] px-4 py-3 max-sm:grid-cols-[minmax(0,1fr)_auto]">
           <div className="flex min-w-0 items-center gap-3">
             <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10">
               <Target className="size-5 text-primary" />
@@ -1679,40 +2027,124 @@ function WhackAvatarGame({ avatarAsset, manifest, playerName }: GameProps) {
               <span className="block text-[10px] font-black uppercase text-muted-foreground">Whack this face</span>
               <span className="block truncate text-sm font-black">{formatExpression(target)}</span>
             </span>
-            <AvatarSprite asset={avatarAsset} manifest={manifest} expression={target} className="size-14 shrink-0" />
+            <AvatarSprite asset={avatarAsset} manifest={manifest} expression={target} className="size-28 shrink-0" showExpressionOverlay />
           </div>
-          <div className="grid min-w-16 justify-items-center rounded-md bg-muted px-3 py-2">
+          <div className="grid min-w-16 justify-items-center rounded-md bg-[#ffd6e7] px-3 py-2">
+            <span className="text-[9px] font-black uppercase text-muted-foreground">Level</span>
+            <span className="text-lg font-black">{level}</span>
+          </div>
+          <div className="grid min-w-16 justify-items-center rounded-md bg-[#ffd6e7] px-3 py-2">
             <span className="text-[9px] font-black uppercase text-muted-foreground">Streak</span>
             <span className="text-lg font-black">{streak}</span>
           </div>
-          <div className="grid min-w-16 justify-items-center rounded-md bg-muted px-3 py-2 max-sm:hidden">
+          <div className="grid min-w-16 justify-items-center rounded-md bg-[#ffd6e7] px-3 py-2 max-sm:hidden">
             <span className="text-[9px] font-black uppercase text-muted-foreground">Hit rate</span>
             <span className="text-lg font-black">{Math.round(accuracy * 100)}%</span>
           </div>
         </div>
 
-        <div data-testid="whack-avatar-board" className="grid min-h-0 grid-cols-3 grid-rows-3 gap-3 rounded-lg border-2 border-[#07111f] bg-[#dff1df] p-3">
+        <div data-testid="whack-avatar-board" className="relative grid min-h-0 grid-cols-3 grid-rows-3 gap-3 rounded-lg border-2 border-[#07111f] bg-[#ffd6e7] p-3">
           {visible.map((visibleExpression, index) => (
             <button
               key={index}
               type="button"
-              className="group relative grid min-h-0 place-items-end overflow-hidden rounded-md border border-[#07111f]/20 bg-[#eff8ed] p-2 shadow-sm transition hover:bg-white focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="group relative grid min-h-0 place-items-center overflow-hidden rounded-md border border-[#07111f]/20 bg-[#ffeaf2] p-2 shadow-sm transition hover:bg-white focus-visible:ring-3 focus-visible:ring-ring/50"
               onClick={() => hit(index)}
               aria-label={visibleExpression ? `Whack ${formatExpression(visibleExpression)}` : `Empty hole ${index + 1}`}
               data-expression={visibleExpression ?? "empty"}
               data-target={visibleExpression === target ? "true" : "false"}
             >
-              <span className="absolute bottom-[8%] left-1/2 h-[16%] w-[68%] -translate-x-1/2 rounded-[50%] bg-[#07111f] shadow-inner" />
               {visibleExpression ? (
-                <AvatarSprite
-                  asset={avatarAsset}
-                  manifest={manifest}
-                  expression={visibleExpression}
-                  className="relative z-10 size-[min(16cqh,7rem)] translate-y-[12%] transition-transform duration-150 group-hover:translate-y-[5%]"
-                />
+                <span className="relative z-10 grid min-h-0 place-items-center gap-1">
+                  <AvatarSprite
+                    asset={avatarAsset}
+                    manifest={manifest}
+                    expression={visibleExpression}
+                    className="size-[min(22cqh,9rem)] transition-transform duration-150 group-hover:scale-105"
+                    showExpressionOverlay
+                  />
+                  <span className="max-w-full rounded bg-white/80 px-2 py-1 text-xs font-black uppercase leading-none text-[#07111f] shadow-sm">
+                    {formatExpression(visibleExpression)}
+                  </span>
+                </span>
               ) : null}
             </button>
           ))}
+          {isLevelBreak ? (
+            <div className="absolute inset-0 z-40 grid place-items-center bg-[#ffd6e7]/95 p-6 text-center backdrop-blur-sm">
+              <div className="grid max-w-sm justify-items-center gap-3 rounded-lg border-2 border-[#07111f] bg-[#ffeaf2] px-8 py-7 shadow-lg">
+                <div className="text-xs font-black uppercase tracking-wide text-muted-foreground">Rest break</div>
+                <div className="text-3xl font-black text-[#07111f]">Starting Level {level}</div>
+                <div className="text-sm font-bold text-muted-foreground">Commencing in</div>
+                <div className="grid size-16 place-items-center rounded-full bg-primary text-3xl font-black text-primary-foreground">
+                  {levelBreakRemaining}
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {status === "ready" ? (
+            <div className="absolute inset-0 z-50 grid place-items-center bg-[#ffd6e7]/95 p-6 text-center backdrop-blur-sm">
+              {readyScreen === "welcome" ? (
+                <div className="grid w-full max-w-md justify-items-center gap-5 rounded-lg border-2 border-[#07111f] bg-[#ffeaf2] p-8 shadow-lg">
+                  <AvatarSprite asset={avatarAsset} manifest={manifest} expression="excited" className="size-32" showExpressionOverlay />
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-wide text-muted-foreground">Whack Avatar</div>
+                    <div className="mt-1 text-4xl font-black text-[#07111f]">Welcome to Wack the Avatar</div>
+                  </div>
+                  <Button
+                    type="button"
+                    className="h-14 min-w-36 bg-[#ff8fbd] text-lg font-black text-[#07111f] hover:bg-[#ff7ab1]"
+                    onClick={() => {
+                      setReadyScreen("mode");
+                      setShowEndlessLevels(false);
+                    }}
+                  >
+                    Play
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid w-full max-w-xl gap-4 rounded-lg border-2 border-[#07111f] bg-[#ffeaf2] p-6 shadow-lg">
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-wide text-muted-foreground">Choose Whack Avatar mode</div>
+                    <div className="mt-1 text-3xl font-black text-[#07111f]">New Round</div>
+                  </div>
+                  <div className="grid gap-3">
+                    <Button type="button" className="h-auto flex-col gap-1 bg-[#ff8fbd] py-5 text-[#07111f] hover:bg-[#ff7ab1]" onClick={() => start("levels")}>
+                      <span className="text-base font-black">5 Level Journey</span>
+                      <span className="text-xs font-semibold opacity-85">15 seconds per level</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-auto flex-col gap-1 border-2 border-[#07111f] bg-[#fff2f7] py-5 text-[#07111f] hover:bg-white"
+                      onClick={() => setShowEndlessLevels((value) => !value)}
+                    >
+                      <span className="text-base font-black">Endless Practice</span>
+                      <span className="text-xs font-semibold text-muted-foreground">Choose a level to repeat forever</span>
+                    </Button>
+                    {showEndlessLevels ? (
+                      <div className="grid gap-2 rounded-md border-2 border-[#07111f] bg-[#ffd6e7] p-3">
+                        <div className="text-sm font-black text-[#07111f]">Pick Endless Level</div>
+                        <div className="grid grid-cols-5 gap-2 max-sm:grid-cols-2">
+                          {Array.from({ length: WHACK_LEVEL_COUNT }, (_, levelIndex) => levelIndex + 1).map((levelNumber) => (
+                            <Button
+                              key={levelNumber}
+                              type="button"
+                              variant="outline"
+                              className="h-12 border-2 border-[#07111f] bg-[#ffeaf2] text-sm font-black text-[#07111f] hover:bg-white"
+                              onClick={() => start("endless", levelNumber)}
+                            >
+                              Level {levelNumber}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
     </GameShell>
@@ -1728,6 +2160,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
   const [motion, setMotion] = useState<CoinCatchMotion>(COIN_CATCH_INITIAL_MOTION);
   const [items, setItems] = useState<CoinCatchItem[]>([]);
   const [cameraStatus, setCameraStatus] = useState<PoseCameraStatus>("off");
+  const [trackerStatus, setTrackerStatus] = useState<VisionTrackerStatus>("idle");
   const [sensorLabel, setSensorLabel] = useState("Camera on play");
   const [poseDirection, setPoseDirection] = useState<"left" | "center" | "right">("center");
   const [moveBalance, setMoveBalance] = useState(0);
@@ -1743,12 +2176,14 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const lastPoseSampleAtRef = useRef(0);
   const previousPoseSampleRef = useRef<CoinCatchPoseSample | null>(null);
+  const poseCenterRef = useRef<number | null>(null);
   const poseControlRef = useRef<CoinCatchPoseControl>({ direction: 0, runIntensity: 0, centerX: 0.5 });
   const keyboardDirectionRef = useRef(0);
   const motionRef = useRef<CoinCatchMotion>(COIN_CATCH_INITIAL_MOTION);
   const itemsRef = useRef<CoinCatchItem[]>([]);
   const scoreRef = useRef(0);
   const spawnIndexRef = useRef(0);
+  const isPoseControlActive = cameraStatus === "ready" && trackerStatus === "ready";
 
   function restart() {
     stopCoinCamera();
@@ -1764,6 +2199,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
     spawnIndexRef.current = 0;
     keyboardDirectionRef.current = 0;
     poseControlRef.current = { direction: 0, runIntensity: 0, centerX: 0.5 };
+    poseCenterRef.current = null;
     setPoseDirection("center");
     setMoveBalance(0);
     setRunIntensity(0);
@@ -1785,7 +2221,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
     }
     setStatus("running");
     setStartedAt((value) => value || performance.now());
-    if (cameraStatus !== "ready" && cameraStatus !== "loading") {
+    if (cameraStatus !== "loading" && trackerStatus !== "loading" && (cameraStatus !== "ready" || trackerStatus !== "ready")) {
       void startCoinCamera();
     }
   }
@@ -1795,7 +2231,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
   }
 
   async function startCoinCamera() {
-    if (cameraStatus === "loading" || cameraStatus === "ready") {
+    if (cameraStatus === "loading" || trackerStatus === "loading") {
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -1804,25 +2240,47 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
       return;
     }
 
-    setCameraStatus("loading");
-    setSensorLabel("Loading body tracker");
-    try {
-      const [{ FilesetResolver, PoseLandmarker: PoseLandmarkerTask }, stream] = await Promise.all([
-        import("@mediapipe/tasks-vision"),
-        navigator.mediaDevices.getUserMedia({
+    if (!cameraStreamRef.current) {
+      setCameraStatus("loading");
+      setSensorLabel("Starting camera");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
             width: { ideal: 640 },
             height: { ideal: 480 }
           },
           audio: false
-        })
-      ]);
-      cameraStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        });
+        cameraStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setCameraStatus("ready");
+        setSensorLabel("Camera live · Loading body tracker");
+      } catch (error) {
+        const isPermissionError = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
+        stopCoinCamera(isPermissionError ? "blocked" : "error");
+        setSensorLabel(isPermissionError ? "Camera blocked · Allow access and retry" : "Camera unavailable · Check that it is connected");
+        return;
       }
+    }
+
+    if (poseLandmarkerRef.current) {
+      setTrackerStatus("ready");
+      previousPoseSampleRef.current = null;
+      poseCenterRef.current = null;
+      lastPoseSampleAtRef.current = 0;
+      setSensorLabel("Stand in frame");
+      runCoinPoseLoop();
+      return;
+    }
+
+    setTrackerStatus("loading");
+    setSensorLabel("Camera live · Loading body tracker");
+    try {
+      const { FilesetResolver, PoseLandmarker: PoseLandmarkerTask } = await import("@mediapipe/tasks-vision");
       if (!poseLandmarkerRef.current) {
         const vision = await FilesetResolver.forVisionTasks(POSE_LANDMARKER_WASM_URL);
         poseLandmarkerRef.current = await PoseLandmarkerTask.createFromOptions(vision, {
@@ -1838,13 +2296,14 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
         });
       }
       previousPoseSampleRef.current = null;
+      poseCenterRef.current = null;
       lastPoseSampleAtRef.current = 0;
-      setCameraStatus("ready");
+      setTrackerStatus("ready");
       setSensorLabel("Stand in frame");
       runCoinPoseLoop();
     } catch (error) {
-      stopCoinCamera("error");
-      setSensorLabel(error instanceof DOMException && error.name === "NotAllowedError" ? "Camera blocked" : "Camera failed");
+      setTrackerStatus("error");
+      setSensorLabel("Camera live · Body tracking unavailable");
     }
   }
 
@@ -1859,12 +2318,14 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
       videoRef.current.srcObject = null;
     }
     previousPoseSampleRef.current = null;
+    poseCenterRef.current = null;
     poseControlRef.current = { direction: 0, runIntensity: 0, centerX: 0.5 };
     setPoseDirection("center");
     setMoveBalance(0);
     setRunIntensity(0);
     drawStellarSkeleton(skeletonCanvasRef.current, undefined);
     setCameraStatus(nextStatus);
+    setTrackerStatus(poseLandmarkerRef.current ? "ready" : "idle");
     if (nextStatus === "off") {
       setSensorLabel("Camera off");
     }
@@ -1899,7 +2360,10 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
           setRunIntensity(0);
           setSensorLabel("Find your body");
         } else {
-          const control = getCoinCatchPoseControl(landmarks, previousPoseSampleRef.current, now);
+          const control = getCoinCatchPoseControl(landmarks, previousPoseSampleRef.current, now, poseCenterRef.current);
+          if (poseCenterRef.current === null) {
+            poseCenterRef.current = control.centerX;
+          }
           const smoothedControl = {
             direction: poseControlRef.current.direction * 0.55 + control.direction * 0.45,
             runIntensity: poseControlRef.current.runIntensity * 0.6 + control.runIntensity * 0.4,
@@ -1911,7 +2375,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
           setPoseDirection(nextDirection);
           setMoveBalance(smoothedControl.direction);
           setRunIntensity(smoothedControl.runIntensity);
-          setSensorLabel(nextDirection === "center" ? "Stand center" : `Run ${nextDirection}`);
+          setSensorLabel(nextDirection === "center" ? "Stand center" : `Move ${nextDirection}`);
         }
       } catch {
         stopCoinCamera("error");
@@ -1958,10 +2422,10 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
     const tick = (now: number) => {
       const deltaSeconds = Math.min(0.05, Math.max(0, (now - previousFrameAt) / 1000));
       previousFrameAt = now;
-      const control = cameraStatus === "ready"
+      const control = isPoseControlActive
         ? poseControlRef.current
         : { direction: keyboardDirectionRef.current, runIntensity: Math.abs(keyboardDirectionRef.current), centerX: 0.5 };
-      if (cameraStatus !== "ready") {
+      if (!isPoseControlActive) {
         setPoseDirection(control.direction < -0.12 ? "left" : control.direction > 0.12 ? "right" : "center");
         setMoveBalance(control.direction);
         setRunIntensity(control.runIntensity);
@@ -2017,7 +2481,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
     };
     animationFrame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationFrame);
-  }, [cameraStatus, startedAt, status]);
+  }, [isPoseControlActive, startedAt, status]);
 
   useEffect(() => {
     if (!lastCatch || lastCatch === "BOOM") {
@@ -2049,7 +2513,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
   const finalEntry = status === "ended"
     ? makeEntry("avatar-pong", playerName, score, startedAt, endedAt, Math.round(elapsed))
     : null;
-  const velocityPercent = Math.min(100, Math.round(Math.abs(motion.velocity) / 0.9 * 100));
+  const velocityPercent = Math.min(100, Math.round(Math.abs(motion.velocity) / 0.405 * 100));
 
   return (
     <GameShell {...config} status={status} score={score} timerLabel={`${Math.floor(elapsed)}s`} sensorLabel={sensorLabel} expression={expression} hideStatusBar showStartOverlay={false} runId={runId} finalEntry={finalEntry} onStart={start} onPause={pause} onRestart={restart}>
@@ -2088,7 +2552,7 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
           ))}
 
           <div className="absolute inset-x-[7%] bottom-[5%] h-px bg-emerald-100/25" />
-          <CoinCatchRunner avatarAsset={avatarAsset} manifest={manifest} expression={expression} motion={motion} runIntensity={cameraStatus === "ready" ? runIntensity : Math.abs(keyboardDirectionRef.current)} />
+          <CoinCatchRunner avatarAsset={avatarAsset} manifest={manifest} expression={expression} motion={motion} runIntensity={isPoseControlActive ? runIntensity : Math.abs(keyboardDirectionRef.current)} />
           {lastCatch ? (
             <div className={cn("pointer-events-none absolute left-1/2 top-[42%] z-40 -translate-x-1/2 text-4xl font-black", lastCatch === "BOOM" ? "text-red-400" : "text-amber-300")}>
               {lastCatch}
@@ -2125,6 +2589,11 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
                 <div className="grid justify-items-center gap-2 text-center"><Camera className="size-9" /><span className="max-w-40 text-xs font-black">{sensorLabel}</span></div>
               </div>
             ) : null}
+            {cameraStatus === "ready" && trackerStatus !== "ready" ? (
+              <div className="absolute left-2 top-2 rounded bg-black/70 px-2 py-1 text-[10px] font-black text-emerald-50 backdrop-blur">
+                {sensorLabel}
+              </div>
+            ) : null}
             <div className="absolute inset-x-2 bottom-2 flex items-center justify-between rounded bg-black/65 px-2 py-1.5 text-[10px] font-black text-white backdrop-blur">
               <span>{poseDirection === "center" ? "STAND" : poseDirection.toUpperCase()}</span>
               <span className="font-mono text-emerald-100">RUN {Math.round(runIntensity * 100)}%</span>
@@ -2135,13 +2604,13 @@ function CoinCatchGame({ avatarAsset, manifest, playerName }: GameProps) {
             <LinearControlMeter label="Run" value={runIntensity} tone="emerald" />
             <LinearControlMeter label="Speed" value={velocityPercent / 100} tone="amber" />
           </div>
-          <Button type="button" variant={cameraStatus === "ready" ? "outline" : "default"} disabled={cameraStatus === "loading"} onClick={cameraStatus === "ready" ? () => stopCoinCamera() : startCoinCamera}>
+          <Button type="button" variant={cameraStatus === "ready" ? "outline" : "default"} disabled={cameraStatus === "loading" || trackerStatus === "loading"} onClick={cameraStatus === "ready" ? () => stopCoinCamera() : startCoinCamera}>
             {cameraStatus === "ready" ? <CameraOff data-icon="inline-start" /> : <Camera data-icon="inline-start" />}
             {cameraStatus === "ready" ? "Camera off" : cameraStatus === "loading" ? "Loading" : "Camera"}
           </Button>
           <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="outline" disabled={cameraStatus === "ready"} onPointerDown={() => { keyboardDirectionRef.current = -1; }} onPointerUp={() => { keyboardDirectionRef.current = 0; }} onPointerLeave={() => { keyboardDirectionRef.current = 0; }}><MoveHorizontal className="rotate-180" /> Left</Button>
-            <Button type="button" variant="outline" disabled={cameraStatus === "ready"} onPointerDown={() => { keyboardDirectionRef.current = 1; }} onPointerUp={() => { keyboardDirectionRef.current = 0; }} onPointerLeave={() => { keyboardDirectionRef.current = 0; }}><MoveHorizontal /> Right</Button>
+            <Button type="button" variant="outline" disabled={isPoseControlActive} onPointerDown={() => { keyboardDirectionRef.current = -1; }} onPointerUp={() => { keyboardDirectionRef.current = 0; }} onPointerLeave={() => { keyboardDirectionRef.current = 0; }}><MoveHorizontal className="rotate-180" /> Left</Button>
+            <Button type="button" variant="outline" disabled={isPoseControlActive} onPointerDown={() => { keyboardDirectionRef.current = 1; }} onPointerUp={() => { keyboardDirectionRef.current = 0; }} onPointerLeave={() => { keyboardDirectionRef.current = 0; }}><MoveHorizontal /> Right</Button>
           </div>
           <div className="grid grid-cols-3 gap-1.5 rounded-md bg-muted p-2 text-center">
             {COIN_CATCH_VALUES.map((value) => <div key={value} className="grid justify-items-center gap-1"><CircleDollarSign className={cn("text-amber-500", value === 1 ? "size-4" : value === 3 ? "size-5" : "size-6")} /><span className="text-[9px] font-black">+{value}</span></div>)}
@@ -2220,47 +2689,38 @@ function CoinCatchRunner({
 function getCoinCatchPoseControl(
   landmarks: NormalizedLandmark[],
   previousSample: CoinCatchPoseSample | null,
-  capturedAt: number
+  capturedAt: number,
+  neutralCenterX: number | null
 ): CoinCatchPoseControl {
-  const visibleArmLandmarks = COIN_CATCH_ARM_LANDMARK_INDEXES.flatMap((index) => {
+  const visibleTorsoLandmarks = COIN_CATCH_TORSO_LANDMARK_INDEXES.flatMap((index) => {
     const landmark = getVisiblePoseLandmark(landmarks, index);
     return landmark ? [landmark] : [];
   });
-  const centerX = visibleArmLandmarks.length > 0
-    ? visibleArmLandmarks.reduce((total, landmark) => total + landmark.x, 0) / visibleArmLandmarks.length
+  const centerX = visibleTorsoLandmarks.length > 0
+    ? visibleTorsoLandmarks.reduce((total, landmark) => total + landmark.x, 0) / visibleTorsoLandmarks.length
     : 0.5;
 
-  if (!previousSample) {
+  if (!previousSample || neutralCenterX === null) {
     return { direction: 0, runIntensity: 0, centerX };
   }
 
   const deltaSeconds = Math.max(0.04, (capturedAt - previousSample.capturedAt) / 1000);
-  const armMotions = COIN_CATCH_ARM_LANDMARK_INDEXES.flatMap((index) => {
-    const current = getVisiblePoseLandmark(landmarks, index);
-    const previous = getVisiblePoseLandmark(previousSample.landmarks, index);
-    if (!current || !previous) {
-      return [];
-    }
-    const mirroredVelocityX = (previous.x - current.x) / deltaSeconds;
-    const velocityY = (current.y - previous.y) / deltaSeconds;
-    const horizontalSpeed = Math.abs(mirroredVelocityX);
-    const speed = Math.hypot(mirroredVelocityX, velocityY);
-    return [{ mirroredVelocityX, horizontalSpeed, speed }];
+  const previousTorsoLandmarks = COIN_CATCH_TORSO_LANDMARK_INDEXES.flatMap((index) => {
+    const landmark = getVisiblePoseLandmark(previousSample.landmarks, index);
+    return landmark ? [landmark] : [];
   });
-
-  if (armMotions.length === 0) {
-    return { direction: 0, runIntensity: 0, centerX };
-  }
-
-  const averageHorizontalVelocity = armMotions.reduce((total, motion) => total + motion.mirroredVelocityX, 0) / armMotions.length;
-  const averageHorizontalSpeed = armMotions.reduce((total, motion) => total + motion.horizontalSpeed, 0) / armMotions.length;
-  const averageArmSpeed = armMotions.reduce((total, motion) => total + motion.speed, 0) / armMotions.length;
-  const horizontalDominance = averageArmSpeed > 0 ? averageHorizontalSpeed / averageArmSpeed : 0;
-  const targetedVelocity = horizontalDominance < 0.42 ? 0 : averageHorizontalVelocity;
-  const direction = Math.abs(targetedVelocity) < COIN_CATCH_ARM_DIRECTION_DEADZONE
+  const previousCenterX = previousTorsoLandmarks.length > 0
+    ? previousTorsoLandmarks.reduce((total, landmark) => total + landmark.x, 0) / previousTorsoLandmarks.length
+    : centerX;
+  const positionOffset = neutralCenterX - centerX;
+  const mirroredVelocityX = (previousCenterX - centerX) / deltaSeconds;
+  const direction = Math.abs(positionOffset) < COIN_CATCH_TORSO_DIRECTION_DEADZONE
     ? 0
-    : clampArcadeValue(targetedVelocity / COIN_CATCH_ARM_DIRECTION_FULL_SPEED, -1, 1);
-  const runIntensity = clampArcadeValue((averageHorizontalSpeed * horizontalDominance) / COIN_CATCH_ARM_RUN_FULL_SPEED, 0, 1);
+    : clampArcadeValue(positionOffset / COIN_CATCH_TORSO_DIRECTION_FULL_SPEED, -1, 1);
+  const runIntensity = Math.max(
+    Math.abs(direction),
+    clampArcadeValue(Math.abs(mirroredVelocityX) / COIN_CATCH_TORSO_RUN_FULL_SPEED, 0, 1)
+  );
   return { direction, runIntensity, centerX };
 }
 
@@ -2276,7 +2736,7 @@ function createCoinCatchItem(index: number, score: number, forceCoin = false): C
     x: 0.12 + randomX * 0.76,
     y: forceCoin ? 0.04 : -0.1,
     size,
-    speed: 0.2 + Math.min(0.16, score * 0.0025) + seededArcadeFraction(index * 13 + 9) * 0.055
+    speed: (0.2 + Math.min(0.16, score * 0.0025) + seededArcadeFraction(index * 13 + 9) * 0.055) * 0.6
   };
 }
 
@@ -2459,14 +2919,16 @@ function FaceSimonGame({ avatarAsset, manifest, playerName }: GameProps) {
   );
 }
 
-type DancePoseId = "hands-up" | "left-reach" | "right-reach" | "left-leg" | "right-leg";
-const STELLAR_DANCE_START_BEAT_MS = 3400;
-const STELLAR_DANCE_MIN_BEAT_MS = 1800;
+type DancePoseId = "hands-up" | "t-pose" | "arms-crossed" | "left-reach" | "right-reach" | "left-leg" | "right-leg";
+const STELLAR_DANCE_START_BEAT_MS = 6800;
+const STELLAR_DANCE_MIN_BEAT_MS = 3600;
 const STELLAR_DANCE_MAX_HEALTH = 5;
-const STELLAR_DANCE_MIN_MUSIC_BEAT_GAP_MS = 1200;
+const STELLAR_DANCE_MIN_MUSIC_BEAT_GAP_MS = 2400;
 const STELLAR_DANCE_EARLY_HIT_MIN_PROGRESS = 0.08;
+const STELLAR_DANCE_MOVE_SPEEDUP_MULTIPLIER = 0.995;
 const AVATAR_GRID_CROP_PADDING_RATIO = 0;
-const STELLAR_DANCE_POSES: DancePoseId[] = ["hands-up", "left-reach", "right-reach", "left-leg", "right-leg"];
+const STELLAR_DANCE_ENABLE_T_POSE = false;
+const STELLAR_DANCE_POSES: DancePoseId[] = ["hands-up", "arms-crossed", "left-reach", "right-reach", "left-leg", "right-leg"];
 const STELLAR_DANCE_SKELETON_CONNECTIONS = [
   [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
   [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28]
@@ -2495,6 +2957,7 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
   const [targetPose, setTargetPose] = useState<DancePoseId>(() => getDancePoseForBeat(0));
   const [detectedPose, setDetectedPose] = useState<DancePoseId | "none">("none");
   const [cameraStatus, setCameraStatus] = useState<PoseCameraStatus>("off");
+  const [trackerStatus, setTrackerStatus] = useState<VisionTrackerStatus>("idle");
   const [sensorLabel, setSensorLabel] = useState("Camera off");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [musicName, setMusicName] = useState("Metronome pace");
@@ -2567,7 +3030,7 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
         setSensorLabel(cameraStatus === "ready" ? "Camera ready" : "Camera off");
       });
     }
-    if (cameraStatus === "off" || cameraStatus === "error" || cameraStatus === "blocked") {
+    if (cameraStatus !== "loading" && trackerStatus !== "loading" && (cameraStatus !== "ready" || trackerStatus !== "ready")) {
       void startPoseCamera();
     }
   }
@@ -2644,7 +3107,7 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
   }
 
   async function startPoseCamera() {
-    if (cameraStatus === "loading" || cameraStatus === "ready") {
+    if (cameraStatus === "loading" || trackerStatus === "loading") {
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -2653,25 +3116,44 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
       return;
     }
 
-    setCameraStatus("loading");
-    setSensorLabel("Loading pose tracker");
-    try {
-      const [{ FilesetResolver, PoseLandmarker: PoseLandmarkerTask }, stream] = await Promise.all([
-        import("@mediapipe/tasks-vision"),
-        navigator.mediaDevices.getUserMedia({
+    if (!cameraStreamRef.current) {
+      setCameraStatus("loading");
+      setSensorLabel("Starting camera");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
             width: { ideal: 640 },
             height: { ideal: 480 }
           },
           audio: false
-        })
-      ]);
-      cameraStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        });
+        cameraStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setCameraStatus("ready");
+        setSensorLabel("Camera live · Loading pose tracker");
+      } catch (error) {
+        const isPermissionError = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
+        stopPoseCamera(isPermissionError ? "blocked" : "error");
+        setSensorLabel(isPermissionError ? "Camera blocked · Allow access and retry" : "Camera unavailable · Check that it is connected");
+        return;
       }
+    }
+
+    if (poseLandmarkerRef.current) {
+      setTrackerStatus("ready");
+      setSensorLabel("Pose camera ready");
+      runPoseLoop();
+      return;
+    }
+
+    setTrackerStatus("loading");
+    setSensorLabel("Camera live · Loading pose tracker");
+    try {
+      const { FilesetResolver, PoseLandmarker: PoseLandmarkerTask } = await import("@mediapipe/tasks-vision");
       if (!poseLandmarkerRef.current) {
         const vision = await FilesetResolver.forVisionTasks(POSE_LANDMARKER_WASM_URL);
         poseLandmarkerRef.current = await PoseLandmarkerTask.createFromOptions(vision, {
@@ -2686,12 +3168,12 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
           minTrackingConfidence: 0.45
         });
       }
-      setCameraStatus("ready");
+      setTrackerStatus("ready");
       setSensorLabel("Pose camera ready");
       runPoseLoop();
     } catch (error) {
-      stopPoseCamera("error");
-      setSensorLabel(error instanceof DOMException && error.name === "NotAllowedError" ? "Camera blocked" : "Camera failed");
+      setTrackerStatus("error");
+      setSensorLabel("Camera live · Pose tracking unavailable");
     }
   }
 
@@ -2708,6 +3190,7 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
     setDetectedPose("none");
     detectedPoseRef.current = "none";
     setCameraStatus(nextStatus);
+    setTrackerStatus(poseLandmarkerRef.current ? "ready" : "idle");
     if (nextStatus === "off") {
       setSensorLabel("Camera off");
     }
@@ -2798,7 +3281,7 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
         judgeCurrentPose(currentBeat, currentTargetPose, boundedPhase);
         const nextBeat = currentBeat + 1;
         fallbackBeatStartedAtRef.current = now;
-        fallbackBeatDurationMsRef.current = Math.max(STELLAR_DANCE_MIN_BEAT_MS, fallbackBeatDurationMsRef.current - 65);
+        fallbackBeatDurationMsRef.current = Math.max(STELLAR_DANCE_MIN_BEAT_MS, fallbackBeatDurationMsRef.current * STELLAR_DANCE_MOVE_SPEEDUP_MULTIPLIER);
         setBeatIndex(nextBeat);
         setTargetPose(getDancePoseForBeat(nextBeat));
         setFallProgress(0);
@@ -2857,6 +3340,11 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
             aria-hidden="true"
           />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,176,0,0.25),transparent_34%),linear-gradient(180deg,rgba(16,24,39,0.16),rgba(16,24,39,0.9))]" />
+          {cameraStatus === "ready" && trackerStatus !== "ready" ? (
+            <div className="absolute bottom-3 left-3 z-50 rounded bg-black/70 px-2 py-1 text-[10px] font-black text-white backdrop-blur">
+              {sensorLabel}
+            </div>
+          ) : null}
           <div className="absolute left-4 top-4 z-40 flex gap-1.5">
             {Array.from({ length: STELLAR_DANCE_MAX_HEALTH }).map((_, index) => (
               <Heart key={index} className={cn("size-5", index < health ? "fill-primary text-primary" : "text-white/35")} />
@@ -2909,12 +3397,12 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
           <div className="absolute left-0 right-0 top-[76%] z-20 h-1 bg-primary shadow-[0_0_18px_rgba(255,75,0,0.65)]" />
           <div
             key={beatIndex}
-            className="absolute left-1/2 z-30 grid -translate-x-1/2 justify-items-center gap-0.5 rounded-md border border-white/20 bg-white/15 px-3 py-2 text-white shadow-lg backdrop-blur transition-[top,opacity]"
+            className="absolute left-1/2 z-30 grid -translate-x-1/2 justify-items-center gap-1 rounded-md border border-white/20 bg-white/15 px-6 py-4 text-white shadow-lg backdrop-blur transition-[top,opacity]"
             style={{ top: `${8 + fallProgress * 62}%`, opacity: Math.max(0, 1 - fallProgress) }}
           >
-            <div className="text-[9px] font-black uppercase text-white/70">Target pose</div>
-            <DancePoseFigure pose={targetPose} small className="my-3 scale-150" />
-            <div className="text-[11px] font-black">{formatDancePose(targetPose)}</div>
+            <div className="text-lg font-black uppercase text-white/70">Target pose</div>
+            <DancePoseFigure pose={targetPose} className="my-6" />
+            <div className="text-[22px] font-black">{formatDancePose(targetPose)}</div>
           </div>
           <div className="absolute inset-x-0 bottom-0 z-30 grid gap-3 p-4">
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-lg border border-white/20 bg-black/40 p-3 text-white backdrop-blur">
@@ -2962,7 +3450,7 @@ function StellarDanceGame({ avatarAsset, manifest, playerName }: GameProps) {
               </div>
             ))}
           </div>
-          <Button type="button" variant={cameraStatus === "ready" ? "outline" : "default"} disabled={cameraStatus === "loading"} onClick={cameraStatus === "ready" ? () => stopPoseCamera() : startPoseCamera}>
+          <Button type="button" variant={cameraStatus === "ready" ? "outline" : "default"} disabled={cameraStatus === "loading" || trackerStatus === "loading"} onClick={cameraStatus === "ready" ? () => stopPoseCamera() : startPoseCamera}>
             <Camera data-icon="inline-start" />
             {cameraStatus === "ready" ? "Camera off" : cameraStatus === "loading" ? "Loading" : "Camera"}
           </Button>
@@ -2986,6 +3474,19 @@ function DancePoseFigure({ pose, small = false, className }: { pose: DancePoseId
   const sizeClass = small ? "size-9" : "size-20";
   const limbClass = small ? "h-1 rounded-full" : "h-1.5 rounded-full";
   const color = pose === "none" ? "bg-muted-foreground/50" : "bg-current";
+  if (pose === "arms-crossed") {
+    return (
+      <span className={cn("relative grid overflow-hidden rounded-sm bg-white", sizeClass, className)} aria-hidden="true">
+        <img
+          src={stellarDanceArmsCrossedIcon}
+          alt=""
+          className="size-full object-contain"
+          draggable={false}
+        />
+      </span>
+    );
+  }
+
   return (
     <span className={cn("relative block text-primary", sizeClass, className)} aria-hidden="true">
       <span className={cn("absolute left-1/2 top-[12%] -translate-x-1/2 rounded-full bg-current", small ? "size-2.5" : "size-5")} />
@@ -3614,6 +4115,12 @@ function formatDancePose(pose: DancePoseId | "none") {
   if (pose === "hands-up") {
     return "Stellar";
   }
+  if (pose === "t-pose") {
+    return "T-pose";
+  }
+  if (pose === "arms-crossed") {
+    return "Arms crossed";
+  }
   if (pose === "left-reach") {
     return "Left reach";
   }
@@ -3632,6 +4139,12 @@ function formatDancePose(pose: DancePoseId | "none") {
 function describeDancePose(pose: DancePoseId | "none") {
   if (pose === "hands-up") {
     return "Raise both arms high";
+  }
+  if (pose === "t-pose") {
+    return "Hold both arms straight out";
+  }
+  if (pose === "arms-crossed") {
+    return "Cross your arms over your chest";
   }
   if (pose === "left-reach") {
     return "Raise your left arm";
@@ -3654,6 +4167,8 @@ function classifyDancePose(landmarks: NormalizedLandmark[] | undefined): DancePo
   }
   const leftShoulder = getVisiblePoseLandmark(landmarks, 11);
   const rightShoulder = getVisiblePoseLandmark(landmarks, 12);
+  const leftElbow = getVisiblePoseLandmark(landmarks, 13);
+  const rightElbow = getVisiblePoseLandmark(landmarks, 14);
   const leftWrist = getVisiblePoseLandmark(landmarks, 15);
   const rightWrist = getVisiblePoseLandmark(landmarks, 16);
   const leftHip = getVisiblePoseLandmark(landmarks, 23);
@@ -3668,14 +4183,44 @@ function classifyDancePose(landmarks: NormalizedLandmark[] | undefined): DancePo
 
   const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
   const hipY = (leftHip.y + rightHip.y) / 2;
+  const torsoHeight = Math.max(0.12, hipY - shoulderY);
   const shoulderWidth = Math.max(0.08, Math.abs(leftShoulder.x - rightShoulder.x));
+  const leftSideX = Math.min(leftShoulder.x, rightShoulder.x);
+  const rightSideX = Math.max(leftShoulder.x, rightShoulder.x);
   const leftHandHigh = Boolean(leftWrist && leftWrist.y < shoulderY - 0.07);
   const rightHandHigh = Boolean(rightWrist && rightWrist.y < shoulderY - 0.07);
-  const leftHandWide = Boolean(leftWrist && leftWrist.x < Math.min(leftShoulder.x, rightShoulder.x) - shoulderWidth * 0.22);
-  const rightHandWide = Boolean(rightWrist && rightWrist.x > Math.max(leftShoulder.x, rightShoulder.x) + shoulderWidth * 0.22);
+  const leftHandWide = Boolean(leftWrist && leftWrist.x < leftSideX + shoulderWidth * 0.12);
+  const rightHandWide = Boolean(rightWrist && rightWrist.x > rightSideX - shoulderWidth * 0.12);
+  const leftElbowWide = Boolean(leftElbow && leftElbow.x < leftSideX - shoulderWidth * 0.08);
+  const rightElbowWide = Boolean(rightElbow && rightElbow.x > rightSideX + shoulderWidth * 0.08);
+  const leftArmSideways = leftHandWide && leftElbowWide;
+  const rightArmSideways = rightHandWide && rightElbowWide;
+  const leftArmExtended = Boolean(leftWrist && leftElbow && leftWrist.x < leftShoulder.x + shoulderWidth * 0.2 && leftElbow.x < leftSideX);
+  const rightArmExtended = Boolean(rightWrist && rightElbow && rightWrist.x > rightShoulder.x - shoulderWidth * 0.2 && rightElbow.x > rightSideX);
+  const leftWristTHeight = Boolean(leftWrist && leftWrist.y >= shoulderY - torsoHeight * 0.25 && leftWrist.y <= shoulderY + torsoHeight * 0.95);
+  const rightWristTHeight = Boolean(rightWrist && rightWrist.y >= shoulderY - torsoHeight * 0.25 && rightWrist.y <= shoulderY + torsoHeight * 0.95);
+  const leftElbowTHeight = Boolean(leftElbow && leftElbow.y >= shoulderY - torsoHeight * 0.25 && leftElbow.y <= shoulderY + torsoHeight * 0.72);
+  const rightElbowTHeight = Boolean(rightElbow && rightElbow.y >= shoulderY - torsoHeight * 0.25 && rightElbow.y <= shoulderY + torsoHeight * 0.72);
+  const bothHandsSideways = leftArmSideways && rightArmSideways && leftArmExtended && rightArmExtended && leftWristTHeight && rightWristTHeight && leftElbowTHeight && rightElbowTHeight;
+  if (STELLAR_DANCE_ENABLE_T_POSE && bothHandsSideways) {
+    return "t-pose";
+  }
+
   const bothHandsHigh = leftHandHigh && rightHandHigh;
   if (bothHandsHigh) {
     return "hands-up";
+  }
+
+  const torsoCenterX = (leftShoulder.x + rightShoulder.x + leftHip.x + rightHip.x) / 4;
+  const upperChestTop = shoulderY - torsoHeight * 0.08;
+  const upperChestBottom = shoulderY + torsoHeight * 0.7;
+  const leftWristOnTorso = Boolean(leftWrist && leftWrist.x >= leftSideX - shoulderWidth * 0.18 && leftWrist.x <= rightSideX + shoulderWidth * 0.18 && leftWrist.y >= upperChestTop && leftWrist.y <= upperChestBottom);
+  const rightWristOnTorso = Boolean(rightWrist && rightWrist.x >= leftSideX - shoulderWidth * 0.18 && rightWrist.x <= rightSideX + shoulderWidth * 0.18 && rightWrist.y >= upperChestTop && rightWrist.y <= upperChestBottom);
+  const wristsNearCenter = Boolean(leftWrist && rightWrist && Math.abs(leftWrist.x - torsoCenterX) <= shoulderWidth * 0.8 && Math.abs(rightWrist.x - torsoCenterX) <= shoulderWidth * 0.8);
+  const wristsCrossed = Boolean(leftWrist && rightWrist && (leftShoulder.x < rightShoulder.x ? leftWrist.x > rightWrist.x : leftWrist.x < rightWrist.x));
+  const elbowsVisibleBesideBody = Boolean(leftElbow && rightElbow && leftElbow.y >= shoulderY - torsoHeight * 0.15 && leftElbow.y <= hipY + torsoHeight * 0.2 && rightElbow.y >= shoulderY - torsoHeight * 0.15 && rightElbow.y <= hipY + torsoHeight * 0.2);
+  if (leftWristOnTorso && rightWristOnTorso && wristsNearCenter && (wristsCrossed || elbowsVisibleBesideBody)) {
+    return "arms-crossed";
   }
 
   const leftReach = leftHandHigh || Boolean(leftWrist && leftHandWide && leftWrist.y < hipY);
@@ -3717,10 +4262,14 @@ function getDanceLimbClass(pose: DancePoseId | "none", limb: "leftArm" | "rightA
   const armLength = small ? "w-5" : "w-10";
   const legLength = small ? "w-4" : "w-8";
   if (limb === "leftArm") {
+    if (pose === "arms-crossed") return `${armLength} rotate-[30deg]`;
+    if (pose === "t-pose") return `${armLength} rotate-180`;
     if (pose === "hands-up" || pose === "left-reach") return `${armLength} -rotate-[125deg]`;
     return `${armLength} rotate-[145deg]`;
   }
   if (limb === "rightArm") {
+    if (pose === "arms-crossed") return `${armLength} rotate-[150deg]`;
+    if (pose === "t-pose") return `${armLength} rotate-0`;
     if (pose === "hands-up" || pose === "right-reach") return `${armLength} -rotate-[55deg]`;
     return `${armLength} rotate-[35deg]`;
   }
@@ -3916,7 +4465,7 @@ function VoiceNoiseGateControl({
   );
 }
 
-async function startVoiceInput(
+async function startLegacyVoiceInput(
   setSensorLabel: (value: string) => void,
   volumeRef: MutableRefObject<number>,
   noiseGateRef: MutableRefObject<number>,
@@ -4018,26 +4567,43 @@ async function startVoiceInput(
   }
 }
 
-function createRhythmTarget(step: number) {
-  const expressions = FACE_RHYTHM_EXPRESSIONS;
+function createRhythmTarget(step: number, deck: readonly FaceRhythmExpression[]) {
   return {
     id: step,
-    expression: expressions[step % expressions.length],
+    expression: deck[step % deck.length] ?? FACE_RHYTHM_EXPRESSIONS[0],
     y: -16
   };
 }
 
-function getWhackTarget(seed: number) {
-  return WHACK_EXPRESSIONS[seed % WHACK_EXPRESSIONS.length];
+function getWhackExpressionPool(level: number) {
+  return WHACK_LEVEL_EXPRESSIONS[Math.max(0, Math.min(WHACK_LEVEL_EXPRESSIONS.length - 1, level - 1))] ?? WHACK_EXPRESSIONS;
 }
 
-function createWhackState(seed: number, target: AvatarExpression): Array<AvatarExpression | null> {
-  const targetIndex = (seed * 5 + 2) % 9;
-  const decoyIndexes = new Set([
-    (targetIndex + 3) % 9,
-    (targetIndex + 6 + (seed % 2)) % 9
-  ]);
-  const decoys = WHACK_EXPRESSIONS.filter((expression) => expression !== target);
+function getWhackTarget(seed: number, expressions: readonly AvatarExpression[] = WHACK_EXPRESSIONS) {
+  return expressions[Math.floor(seededArcadeFraction(seed * 19 + 3) * expressions.length)] ?? WHACK_EXPRESSIONS[0];
+}
+
+function getWhackLevel(remainingSeconds: number) {
+  const elapsedSeconds = Math.max(0, WHACK_DURATION_SECONDS - remainingSeconds);
+  return Math.min(WHACK_LEVEL_COUNT, Math.floor(elapsedSeconds / WHACK_LEVEL_DURATION_SECONDS) + 1);
+}
+
+function getWhackPopupIntervalMs(level: number) {
+  const levelIndex = Math.max(0, Math.min(WHACK_LEVEL_COUNT - 1, level - 1));
+  const levelSpeed = WHACK_LEVEL_SPEED_BOOST ** levelIndex;
+  const base = WHACK_LEVEL_ONE_POPUP_MS.base / levelSpeed;
+  return base;
+}
+
+function createWhackState(seed: number, target: AvatarExpression, expressions: readonly AvatarExpression[] = WHACK_EXPRESSIONS): Array<AvatarExpression | null> {
+  const targetIndex = Math.floor(seededArcadeFraction(seed * 23 + 11) * 9);
+  const availableIndexes = Array.from({ length: 9 }, (_, index) => index).filter((index) => index !== targetIndex);
+  const decoyIndexes = new Set<number>(
+    availableIndexes
+      .sort((left, right) => seededArcadeFraction(seed * 31 + left * 7) - seededArcadeFraction(seed * 31 + right * 7))
+      .slice(0, 2)
+  );
+  const decoys = expressions.filter((expression) => expression !== target);
 
   return Array.from({ length: 9 }, (_, index) => {
     if (index === targetIndex) {
@@ -4046,6 +4612,6 @@ function createWhackState(seed: number, target: AvatarExpression): Array<AvatarE
     if (!decoyIndexes.has(index)) {
       return null;
     }
-    return decoys[(seed + index) % decoys.length];
+    return decoys[Math.floor(seededArcadeFraction(seed * 37 + index * 13) * decoys.length)] ?? null;
   });
 }

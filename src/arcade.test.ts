@@ -6,6 +6,7 @@ import {
   coinCatchItemHitsAvatar,
   createVoiceFlappyRound,
   buildWordSnakeLeaderboardEntry,
+  createFaceRhythmDeck,
   createLeaderboardStore,
   createMemoryMatchDeck,
   getAvatarVisualMatchKey,
@@ -16,6 +17,7 @@ import {
   nextSimonSequence,
   rankFaceExpressions,
   resolveCoinCatchItem,
+  scoreMemoryMatchPair,
   scoreWhackHit,
   stepCoinCatchMotion,
   stepPongRound,
@@ -151,6 +153,13 @@ describe("pure game helpers", () => {
     expect(getMemoryTensionLevel(5, false)).toBe("calm");
   });
 
+  test("scores Memory Match pairs with a modest remaining-time bonus", () => {
+    expect(scoreMemoryMatchPair(120, 120)).toBe(3);
+    expect(scoreMemoryMatchPair(60, 120)).toBe(2);
+    expect(scoreMemoryMatchPair(10, 120)).toBe(1);
+    expect(scoreMemoryMatchPair(0, 120)).toBe(1);
+  });
+
   test("scores whack hits only when the visible expression is the target expression", () => {
     expect(scoreWhackHit({ visibleExpression: "happy", targetExpression: "happy", currentScore: 3 })).toEqual({
       score: 4,
@@ -191,6 +200,15 @@ describe("pure game helpers", () => {
       { categoryName: "eyeBlinkLeft", score: 0.86 },
       { categoryName: "eyeBlinkRight", score: 0.84 }
     ]).expression).toBe("sleepy");
+    expect(classifyFaceExpression([
+      { categoryName: "mouthFrownLeft", score: 0.78 },
+      { categoryName: "mouthFrownRight", score: 0.76 },
+      { categoryName: "browInnerUp", score: 0.42 }
+    ]).expression).toBe("sad");
+    expect(classifyFaceExpression([
+      { categoryName: "eyeBlinkLeft", score: 0.9 },
+      { categoryName: "eyeBlinkRight", score: 0.08 }
+    ]).expression).toBe("dizzy");
     expect(classifyFaceExpression([{ categoryName: "_neutral", score: 0.91 }])).toEqual({
       expression: "happy",
       confidence: 1
@@ -207,26 +225,36 @@ describe("pure game helpers", () => {
       { categoryName: "_neutral", score: 0.05 }
     ]);
 
-    expect(ranking).toHaveLength(4);
+    expect(ranking).toHaveLength(6);
     expect(ranking[0].expression).toBe("excited");
-    expect(ranking.map((match) => match.expression).sort()).toEqual(["excited", "happy", "playful", "sleepy"]);
+    expect(ranking.map((match) => match.expression).sort()).toEqual(["dizzy", "excited", "happy", "playful", "sad", "sleepy"]);
     expect(ranking.every((match, index) => index === 0 || ranking[index - 1].confidence >= match.confidence)).toBe(true);
   });
 
-  test("uses four visually distinct manifest frames for Face Rhythm", () => {
+  test("uses six visually distinct manifest frames for Face Rhythm", () => {
     const manifest = {
       frames: {
         happy: { x: 0, y: 0, width: 100, height: 100 },
         excited: { x: 100, y: 0, width: 100, height: 100 },
         playful: { x: 200, y: 0, width: 100, height: 100 },
-        sleepy: { x: 300, y: 0, width: 100, height: 100 }
+        sleepy: { x: 300, y: 0, width: 100, height: 100 },
+        sad: { x: 400, y: 0, width: 100, height: 100 },
+        dizzy: { x: 500, y: 0, width: 100, height: 100 }
       }
     };
-    const keys = ["happy", "playful", "sleepy", "excited"].map((expression) => (
-      getAvatarVisualMatchKey(manifest, expression as "happy" | "playful" | "sleepy" | "excited")
+    const keys = ["happy", "excited", "playful", "sleepy", "sad", "dizzy"].map((expression) => (
+      getAvatarVisualMatchKey(manifest, expression as "happy" | "excited" | "playful" | "sleepy" | "sad" | "dizzy")
     ));
 
-    expect(new Set(keys).size).toBe(4);
+    expect(new Set(keys).size).toBe(6);
+  });
+
+  test("builds shuffled Face Rhythm decks without adjacent duplicate faces", () => {
+    const deck = createFaceRhythmDeck(18, () => 0.37);
+
+    expect(deck).toHaveLength(18);
+    expect(new Set(deck.slice(0, 6))).toEqual(new Set(["happy", "excited", "playful", "sleepy", "sad", "dizzy"]));
+    expect(deck.every((expression, index) => index === 0 || expression !== deck[index - 1])).toBe(true);
   });
 
   test("advances pong score on paddle returns and fails when the avatar ball passes the paddle", () => {
@@ -263,6 +291,7 @@ describe("pure game helpers", () => {
 
     expect(fast.velocity).toBeGreaterThan(slow.velocity);
     expect(fast.x).toBeGreaterThan(slow.x);
+    expect(fast.x).toBeGreaterThan(0.65);
     expect(stepCoinCatchMotion({ motion: { x: 0.92, velocity: 0.8 }, direction: 1, runIntensity: 1, deltaSeconds: 0.05 })).toEqual({
       x: 0.92,
       velocity: 0
@@ -281,7 +310,7 @@ describe("pure game helpers", () => {
   });
 
   test("extends Simon sequences with a deterministic expression", () => {
-    expect(nextSimonSequence(["happy"], 3)).toEqual(["happy", "excited"]);
+    expect(nextSimonSequence(["happy"], 3)).toEqual(["happy", "sleepy"]);
   });
 
   test("builds a Word Snake leaderboard entry with progress secondary score", () => {
@@ -336,7 +365,7 @@ describe("Voice Flappy physics", () => {
   test("the deterministic voice autopilot clears several scrolling pipes", () => {
     let round: VoiceFlappyRound = { ...createVoiceFlappyRound(world), status: "running" };
 
-    for (let frame = 0; frame < 60 * 60 && round.status === "running"; frame += 1) {
+    for (let frame = 0; frame < 60 * 93 && round.status === "running"; frame += 1) {
       const voiceLevel = getVoiceFlappyRecommendedLevel(round, world);
       round = stepVoiceFlappyRound(round, { deltaSeconds: 1 / 60, voiceLevel, world });
     }

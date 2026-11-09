@@ -286,6 +286,18 @@
   max-inline-size: 100%;
   max-block-size: 100%;
   aspect-ratio: 1;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.memory-match-card *,
+.memory-match-card img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.memory-match-card ::selection {
+  background: transparent;
 }
 
 @supports not (width: 1cqw) {

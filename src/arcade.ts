@@ -12,8 +12,8 @@ export const AVATAR_EXPRESSIONS = [
 ] as const;
 
 export type AvatarExpression = (typeof AVATAR_EXPRESSIONS)[number];
-export type FaceRhythmExpression = Extract<AvatarExpression, "happy" | "playful" | "sleepy" | "excited">;
-export const FACE_RHYTHM_EXPRESSIONS: readonly FaceRhythmExpression[] = ["happy", "playful", "sleepy", "excited"];
+export type FaceRhythmExpression = Extract<AvatarExpression, "happy" | "playful" | "sleepy" | "excited" | "sad" | "dizzy">;
+export const FACE_RHYTHM_EXPRESSIONS: readonly FaceRhythmExpression[] = ["happy", "excited", "playful", "sleepy", "sad", "dizzy"];
 export type FaceBlendshapeScore = {
   categoryName: string;
   score: number;
@@ -169,7 +169,7 @@ export const VOICE_FLAPPY_BIRD_X = 112;
 export const VOICE_FLAPPY_BIRD_SIZE = 56;
 export const VOICE_FLAPPY_PIPE_WIDTH = 70;
 export const VOICE_FLAPPY_GROUND_HEIGHT = 28;
-const VOICE_FLAPPY_PIPE_SPEED = 132;
+const VOICE_FLAPPY_PIPE_SPEED = 85.8;
 const VOICE_FLAPPY_GRAVITY = 240;
 const VOICE_FLAPPY_LIFT_ACCELERATION = 650;
 const VOICE_FLAPPY_FLAP_VELOCITY = -190;
@@ -231,6 +231,14 @@ export function getMemoryTensionLevel(remaining: number, isRunning: boolean): Me
     return "urgent";
   }
   return "mild";
+}
+
+export function scoreMemoryMatchPair(remainingSeconds: number, durationSeconds: number): number {
+  if (durationSeconds <= 0) {
+    return 1;
+  }
+  const remainingRatio = Math.min(1, Math.max(0, remainingSeconds / durationSeconds));
+  return Math.max(1, Math.round(1 + remainingRatio * 2));
 }
 
 export function createLeaderboardStore(storage: StorageLike, storageKey: string, now: () => Date = () => new Date()) {
@@ -329,6 +337,10 @@ export function rankFaceExpressions(blendshapes: readonly FaceBlendshapeScore[])
     score("mouthPucker"),
     average(score("mouthStretchLeft"), score("mouthStretchRight"))
   );
+  const frown = average(score("mouthFrownLeft"), score("mouthFrownRight"));
+  const browRaised = score("browInnerUp");
+  const leftBlink = score("eyeBlinkLeft");
+  const rightBlink = score("eyeBlinkRight");
 
   const candidates: Array<{ expression: Exclude<FaceRhythmExpression, "happy">; score: number; threshold: number }> = [
     {
@@ -343,8 +355,18 @@ export function rankFaceExpressions(blendshapes: readonly FaceBlendshapeScore[])
     },
     {
       expression: "sleepy",
-      score: Math.min(score("eyeBlinkLeft"), score("eyeBlinkRight")),
+      score: Math.min(leftBlink, rightBlink),
       threshold: 0.52
+    },
+    {
+      expression: "sad",
+      score: frown * 0.68 + browRaised * 0.32,
+      threshold: 0.28
+    },
+    {
+      expression: "dizzy",
+      score: Math.max(leftBlink, rightBlink) * (1 - Math.min(leftBlink, rightBlink)),
+      threshold: 0.38
     }
   ];
   const rankedCandidates = candidates.map((candidate) => {
@@ -417,9 +439,9 @@ export function stepCoinCatchMotion(input: CoinCatchMotionInput): CoinCatchMotio
   const deltaSeconds = clampValue(input.deltaSeconds, 0, 0.05);
   const direction = clampValue(input.direction, -1, 1);
   const runIntensity = clampValue(input.runIntensity, 0, 1);
-  const maximumSpeed = 0.32 + runIntensity * 0.58;
+  const maximumSpeed = 0.42 + runIntensity * 0.68;
   const targetVelocity = direction * maximumSpeed;
-  const acceleration = direction === 0 ? 2.8 : 1.5 + runIntensity * 3.2;
+  const acceleration = direction === 0 ? 4.6 : 3.2 + runIntensity * 4.8;
   const velocityDelta = clampValue(
     targetVelocity - input.motion.velocity,
     -acceleration * deltaSeconds,
@@ -537,7 +559,7 @@ export function getVoiceFlappyPlayableHeight(worldHeight: number) {
 }
 
 function createInitialVoiceFlappyPipes(world: VoiceFlappyWorld) {
-  const firstX = Math.max(world.width - 24, VOICE_FLAPPY_BIRD_X + 260);
+  const firstX = Math.max(world.width, VOICE_FLAPPY_BIRD_X + 260);
   const spacing = getVoiceFlappyPipeSpacing(0, world.width);
   return [
     createVoiceFlappyPipe(firstX, 0, 0, world.height),
@@ -570,7 +592,7 @@ function recycleVoiceFlappyPipes(pipes: VoiceFlappyPipe[], score: number, world:
     if (pipe.x >= -VOICE_FLAPPY_PIPE_WIDTH - 12) {
       return pipe;
     }
-    farthestX += getVoiceFlappyPipeSpacing(score, world.width);
+    farthestX = Math.max(world.width, farthestX + getVoiceFlappyPipeSpacing(score, world.width));
     const nextPipe = createVoiceFlappyPipe(farthestX, nextIndex, score, world.height);
     nextIndex += 1;
     return nextPipe;
@@ -641,6 +663,22 @@ function clampValue(value: number, minimum: number, maximum: number) {
 export function nextSimonSequence(sequence: FaceRhythmExpression[], step: number) {
   const playable = FACE_RHYTHM_EXPRESSIONS;
   return [...sequence, playable[step % playable.length]];
+}
+
+export function createFaceRhythmDeck(length: number, random: () => number = Math.random): FaceRhythmExpression[] {
+  const deck: FaceRhythmExpression[] = [];
+  while (deck.length < length) {
+    const round = [...FACE_RHYTHM_EXPRESSIONS];
+    for (let index = round.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(random() * (index + 1));
+      [round[index], round[swapIndex]] = [round[swapIndex], round[index]];
+    }
+    if (deck.length > 0 && round[0] === deck[deck.length - 1]) {
+      [round[0], round[1]] = [round[1], round[0]];
+    }
+    deck.push(...round);
+  }
+  return deck.slice(0, Math.max(0, length));
 }
 
 export function buildWordSnakeLeaderboardEntry(input: {
